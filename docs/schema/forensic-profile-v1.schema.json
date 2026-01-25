@@ -1,0 +1,144 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://witnessd.dev/schema/v1/forensic-profile.json",
+  "title": "Forensic Authorship Profile",
+  "description": "Statistical analysis of authorship patterns per Witness Protocol v1",
+  "type": "object",
+  "required": [
+    "version",
+    "file_path",
+    "event_count",
+    "time_span_seconds",
+    "metrics",
+    "assessment"
+  ],
+  "properties": {
+    "version": {
+      "type": "integer",
+      "const": 1,
+      "description": "Schema version number"
+    },
+    "file_path": {
+      "type": "string",
+      "description": "Path of the analyzed file"
+    },
+    "event_count": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Total number of witness events analyzed"
+    },
+    "time_span_seconds": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Duration from first to last event in seconds"
+    },
+    "session_count": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Number of detected editing sessions"
+    },
+    "first_event": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp of first witness event"
+    },
+    "last_event": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp of last witness event"
+    },
+    "metrics": {
+      "$ref": "#/$defs/primary_metrics",
+      "description": "Primary forensic metrics"
+    },
+    "anomalies": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/anomaly"
+      },
+      "description": "Detected anomalous patterns"
+    },
+    "assessment": {
+      "type": "string",
+      "enum": [
+        "CONSISTENT WITH HUMAN AUTHORSHIP",
+        "SUSPICIOUS PATTERNS DETECTED",
+        "INSUFFICIENT DATA"
+      ],
+      "description": "Overall assessment of authorship patterns"
+    }
+  },
+  "$defs": {
+    "primary_metrics": {
+      "type": "object",
+      "required": [
+        "monotonic_append_ratio",
+        "edit_entropy",
+        "median_interval_seconds",
+        "positive_negative_ratio",
+        "deletion_clustering"
+      ],
+      "properties": {
+        "monotonic_append_ratio": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Fraction of edits at document end (position >= 0.95)"
+        },
+        "edit_entropy": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Shannon entropy of edit position histogram (20 bins)"
+        },
+        "median_interval_seconds": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Median time between consecutive witness events"
+        },
+        "positive_negative_ratio": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Ratio of insertions to total non-replacement edits"
+        },
+        "deletion_clustering": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Nearest-neighbor distance ratio for deletions"
+        }
+      },
+      "additionalProperties": false
+    },
+    "anomaly": {
+      "type": "object",
+      "required": ["timestamp", "type", "description", "severity"],
+      "properties": {
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO 8601 timestamp of the anomaly"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["gap", "high_velocity", "monotonic_append", "low_entropy"],
+          "description": "Type of anomaly detected"
+        },
+        "description": {
+          "type": "string",
+          "description": "Human-readable description of the anomaly"
+        },
+        "severity": {
+          "type": "string",
+          "enum": ["info", "warning", "alert"],
+          "description": "Severity level of the anomaly"
+        },
+        "context": {
+          "type": "string",
+          "description": "Declared context at time of anomaly (if any)"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

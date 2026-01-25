@@ -105,10 +105,39 @@ witnessctl forensics ~/Documents/important.md
 
 ## Documentation
 
+### Protocol Specification
+
+The formal Witness Protocol specification is maintained separately from the implementation:
+
+- [spec/witness-protocol-v1.md](spec/witness-protocol-v1.md) — Formal protocol specification
+- [spec/CHANGELOG.md](spec/CHANGELOG.md) — Specification version history
+
+### JSON Schemas
+
+Schemas for validating witnessd output:
+
+- [schema/witness-proof-v1.schema.json](schema/witness-proof-v1.schema.json) — Evidence packet validation
+- [schema/forensic-profile-v1.schema.json](schema/forensic-profile-v1.schema.json) — Forensic analysis validation
+
+### General
+
 - [SECURITY.md](../SECURITY.md) — Security model and vulnerability reporting
 - [PRIVACY.md](../PRIVACY.md) — Privacy policy and data handling
 - [CONTRIBUTING.md](../CONTRIBUTING.md) — Contribution guidelines
-- [specs/keystroke-metrics.md](../specs/keystroke-metrics.md) — Technical specification
+
+### Versioning
+
+The specification and implementation are versioned independently:
+
+| Component | Tag Format | Example |
+|-----------|------------|---------|
+| Protocol Spec | `spec/vX.Y.Z` | `spec/v1.0.0` |
+| Daemon | `witnessd/vX.Y.Z` | `witnessd/v1.0.0` |
+
+This separation ensures:
+- Protocol stability independent of implementation changes
+- Clear compatibility tracking for third-party implementations
+- Judicial auditability of evidence format without parsing source code
 
 ## Use Cases
 

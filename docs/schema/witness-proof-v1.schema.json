@@ -1,0 +1,226 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://witnessd.dev/schema/v1/witness-proof.json",
+  "title": "Witness Evidence Packet",
+  "description": "A self-contained cryptographic proof of document witnessing per Witness Protocol v1",
+  "type": "object",
+  "required": [
+    "version",
+    "timestamp",
+    "file_path",
+    "file_hash",
+    "file_size",
+    "mmr_index",
+    "mmr_size",
+    "mmr_root",
+    "merkle_path",
+    "peaks",
+    "peak_position",
+    "public_key",
+    "signature"
+  ],
+  "properties": {
+    "version": {
+      "type": "integer",
+      "const": 1,
+      "description": "Schema version number"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp of evidence export"
+    },
+    "file_path": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Original path of the witnessed file"
+    },
+    "file_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$",
+      "description": "Hex-encoded SHA-256 hash of file contents"
+    },
+    "file_size": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Size of the file in bytes"
+    },
+    "mmr_index": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Position of this witness event in the MMR"
+    },
+    "mmr_size": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Total number of nodes in the MMR at proof time"
+    },
+    "mmr_root": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$",
+      "description": "Hex-encoded witness root (bagged peaks)"
+    },
+    "merkle_path": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/merkle_path_element"
+      },
+      "description": "Inclusion proof from leaf to peak"
+    },
+    "peaks": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-f0-9]{64}$"
+      },
+      "minItems": 1,
+      "description": "Hex-encoded hashes of all MMR peaks"
+    },
+    "peak_position": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Index of the peak this leaf belongs to"
+    },
+    "public_key": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$",
+      "description": "Hex-encoded Ed25519 public key"
+    },
+    "signature": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{128}$",
+      "description": "Hex-encoded Ed25519 signature over mmr_root"
+    },
+    "anchors": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/anchor_proof"
+      },
+      "description": "Optional external timestamp proofs"
+    },
+    "metadata": {
+      "$ref": "#/$defs/event_metadata",
+      "description": "Optional full event metadata for forensic analysis"
+    }
+  },
+  "$defs": {
+    "merkle_path_element": {
+      "type": "object",
+      "required": ["hash", "is_left"],
+      "properties": {
+        "hash": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$",
+          "description": "Hex-encoded sibling hash"
+        },
+        "is_left": {
+          "type": "boolean",
+          "description": "True if sibling is on the left side"
+        }
+      },
+      "additionalProperties": false
+    },
+    "anchor_proof": {
+      "type": "object",
+      "required": ["type", "status", "proof"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["opentimestamps", "rfc3161"],
+          "description": "Type of external anchor"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["pending", "confirmed", "failed"],
+          "description": "Status of the anchor proof"
+        },
+        "proof": {
+          "type": "string",
+          "contentEncoding": "base64",
+          "description": "Base64-encoded proof data"
+        },
+        "anchor_time": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO 8601 timestamp when anchor was confirmed"
+        }
+      },
+      "additionalProperties": false
+    },
+    "event_metadata": {
+      "type": "object",
+      "properties": {
+        "device_id": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{32}$",
+          "description": "Hex-encoded 16-byte device UUID"
+        },
+        "timestamp_ns": {
+          "type": "integer",
+          "description": "Unix timestamp in nanoseconds"
+        },
+        "size_delta": {
+          "type": "integer",
+          "description": "Change in file size from previous state"
+        },
+        "context": {
+          "$ref": "#/$defs/context_declaration"
+        },
+        "edit_regions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/edit_region"
+          },
+          "description": "Edit regions for this witness event"
+        }
+      },
+      "additionalProperties": false
+    },
+    "context_declaration": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["external", "assisted", "review"],
+          "description": "Context type"
+        },
+        "note": {
+          "type": "string",
+          "description": "Freeform explanation"
+        }
+      },
+      "additionalProperties": false
+    },
+    "edit_region": {
+      "type": "object",
+      "required": ["start_pct", "end_pct", "delta_sign", "byte_count"],
+      "properties": {
+        "start_pct": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Start position as fraction of document length"
+        },
+        "end_pct": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "End position as fraction of document length"
+        },
+        "delta_sign": {
+          "type": "integer",
+          "enum": [0, 1, 2],
+          "description": "Change type: 0=replace, 1=insert, 2=delete"
+        },
+        "byte_count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of bytes affected"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}
