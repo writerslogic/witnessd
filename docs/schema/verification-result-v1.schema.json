@@ -1,0 +1,602 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/writerslogic/witnessd/main/docs/schema/verification-result-v1.schema.json",
+  "title": "Verification Result",
+  "description": "Output of evidence packet verification by an arbiter. Contains the overall verdict, confidence score, individual check results, and any warnings or errors.",
+  "type": "object",
+  "required": [
+    "version",
+    "verified_at",
+    "packet_hash",
+    "result",
+    "confidence",
+    "checks",
+    "warnings",
+    "errors"
+  ],
+  "properties": {
+    "version": {
+      "type": "integer",
+      "const": 1,
+      "description": "Schema version number"
+    },
+    "verified_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when verification was performed"
+    },
+    "packet_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$",
+      "description": "SHA-256 hash of the verified evidence packet"
+    },
+    "result": {
+      "type": "string",
+      "enum": ["valid", "invalid"],
+      "description": "Overall verification result"
+    },
+    "confidence": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "Confidence score (0-100) based on evidence strength and verification depth"
+    },
+    "strength_verified": {
+      "$ref": "#/$defs/strength",
+      "description": "Evidence strength tier that was actually verified"
+    },
+    "summary": {
+      "type": "string",
+      "description": "Human-readable summary of the verification result"
+    },
+    "checks": {
+      "$ref": "#/$defs/check_results",
+      "description": "Results of individual verification checks"
+    },
+    "claims_verified": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/verified_claim"
+      },
+      "description": "Claims from the evidence packet and their verification status"
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/warning"
+      },
+      "description": "Non-fatal issues that may affect interpretation"
+    },
+    "errors": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/error"
+      },
+      "description": "Fatal issues that caused verification to fail"
+    },
+    "metadata": {
+      "$ref": "#/$defs/verification_metadata",
+      "description": "Additional metadata about the verification process"
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "strength": {
+      "type": "integer",
+      "enum": [1, 2, 3, 4],
+      "description": "Evidence tier: 1=basic, 2=standard, 3=enhanced, 4=maximum"
+    },
+    "check_status": {
+      "type": "string",
+      "enum": ["pass", "fail", "skip", "warn"],
+      "description": "Check result: pass=verified, fail=verification failed, skip=not applicable, warn=passed with concerns"
+    },
+    "check_results": {
+      "type": "object",
+      "required": [
+        "document_hash",
+        "chain_integrity",
+        "vdf_proofs",
+        "declaration"
+      ],
+      "properties": {
+        "document_hash": {
+          "$ref": "#/$defs/check_result",
+          "description": "Verification that document hash matches chain tip"
+        },
+        "chain_integrity": {
+          "$ref": "#/$defs/chain_check_result",
+          "description": "Verification of checkpoint chain cryptographic integrity"
+        },
+        "vdf_proofs": {
+          "$ref": "#/$defs/vdf_check_result",
+          "description": "Verification of VDF time proofs"
+        },
+        "declaration": {
+          "$ref": "#/$defs/declaration_check_result",
+          "description": "Verification of signed declaration"
+        },
+        "keystroke": {
+          "$ref": "#/$defs/keystroke_check_result",
+          "description": "Verification of keystroke evidence (if present)"
+        },
+        "presence": {
+          "$ref": "#/$defs/check_result",
+          "description": "Verification of presence evidence (if present)"
+        },
+        "hardware": {
+          "$ref": "#/$defs/hardware_check_result",
+          "description": "Verification of TPM attestations (if present)"
+        },
+        "behavioral": {
+          "$ref": "#/$defs/behavioral_check_result",
+          "description": "Verification of behavioral metrics (if present)"
+        },
+        "anchors": {
+          "$ref": "#/$defs/anchor_check_result",
+          "description": "Verification of external timestamp anchors (if present)"
+        }
+      },
+      "additionalProperties": false
+    },
+    "check_result": {
+      "type": "object",
+      "required": ["status"],
+      "properties": {
+        "status": {
+          "$ref": "#/$defs/check_status"
+        },
+        "message": {
+          "type": "string",
+          "description": "Human-readable result message"
+        },
+        "details": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Check-specific details"
+        }
+      },
+      "additionalProperties": false
+    },
+    "chain_check_result": {
+      "type": "object",
+      "required": ["status"],
+      "properties": {
+        "status": {
+          "$ref": "#/$defs/check_status"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "object",
+          "properties": {
+            "checkpoint_count": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Number of checkpoints in the chain"
+            },
+            "chain_valid": {
+              "type": "boolean",
+              "description": "Whether hash chain is unbroken"
+            },
+            "first_checkpoint": {
+              "type": "string",
+              "format": "date-time",
+              "description": "Timestamp of first checkpoint"
+            },
+            "last_checkpoint": {
+              "type": "string",
+              "format": "date-time",
+              "description": "Timestamp of last checkpoint"
+            },
+            "broken_links": {
+              "type": "array",
+              "items": {
+                "type": "integer"
+              },
+              "description": "Ordinals of checkpoints with broken predecessor links"
+            }
+          },
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "vdf_check_result": {
+      "type": "object",
+      "required": ["status"],
+      "properties": {
+        "status": {
+          "$ref": "#/$defs/check_status"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "object",
+          "properties": {
+            "proofs_verified": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Number of VDF proofs verified"
+            },
+            "proofs_failed": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Number of VDF proofs that failed verification"
+            },
+            "total_elapsed_time": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Total proven elapsed time in nanoseconds"
+            },
+            "total_elapsed_time_human": {
+              "type": "string",
+              "description": "Human-readable elapsed time (e.g., '2h 15m 30s')"
+            },
+            "failed_ordinals": {
+              "type": "array",
+              "items": {
+                "type": "integer"
+              },
+              "description": "Ordinals of checkpoints with invalid VDF proofs"
+            }
+          },
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "declaration_check_result": {
+      "type": "object",
+      "required": ["status"],
+      "properties": {
+        "status": {
+          "$ref": "#/$defs/check_status"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "object",
+          "properties": {
+            "signature_valid": {
+              "type": "boolean",
+              "description": "Whether Ed25519 signature is valid"
+            },
+            "document_hash_matches": {
+              "type": "boolean",
+              "description": "Whether declared document hash matches packet"
+            },
+            "chain_hash_matches": {
+              "type": "boolean",
+              "description": "Whether declared chain hash matches packet"
+            },
+            "ai_usage_declared": {
+              "type": "boolean",
+              "description": "Whether AI tool usage is declared"
+            },
+            "ai_tools": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Names of declared AI tools"
+            },
+            "max_ai_extent": {
+              "type": "string",
+              "enum": ["none", "minimal", "moderate", "substantial"],
+              "description": "Maximum declared AI contribution extent"
+            }
+          },
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "keystroke_check_result": {
+      "type": "object",
+      "required": ["status"],
+      "properties": {
+        "status": {
+          "$ref": "#/$defs/check_status"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "object",
+          "properties": {
+            "sample_chain_valid": {
+              "type": "boolean",
+              "description": "Whether jitter sample chain has integrity"
+            },
+            "samples_verified": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Number of samples with valid chain hashes"
+            },
+            "total_keystrokes": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Total keystrokes claimed"
+            },
+            "keystrokes_per_minute": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Average typing speed"
+            },
+            "plausible_human_rate": {
+              "type": "boolean",
+              "description": "Whether typing rate is humanly plausible"
+            },
+            "jitter_distribution_valid": {
+              "type": "boolean",
+              "description": "Whether jitter values show expected statistical properties"
+            },
+            "duration_seconds": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Duration of keystroke session in seconds"
+            }
+          },
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "hardware_check_result": {
+      "type": "object",
+      "required": ["status"],
+      "properties": {
+        "status": {
+          "$ref": "#/$defs/check_status"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "object",
+          "properties": {
+            "bindings_verified": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Number of TPM bindings verified"
+            },
+            "bindings_failed": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Number of TPM bindings that failed"
+            },
+            "device_id": {
+              "type": "string",
+              "description": "Device identifier from attestation"
+            },
+            "pcr_values_consistent": {
+              "type": "boolean",
+              "description": "Whether PCR values are consistent across bindings"
+            },
+            "quote_signatures_valid": {
+              "type": "boolean",
+              "description": "Whether all quote signatures are valid"
+            }
+          },
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "behavioral_check_result": {
+      "type": "object",
+      "required": ["status"],
+      "properties": {
+        "status": {
+          "$ref": "#/$defs/check_status"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "object",
+          "properties": {
+            "assessment": {
+              "type": "string",
+              "enum": [
+                "CONSISTENT WITH HUMAN AUTHORSHIP",
+                "SUSPICIOUS PATTERNS DETECTED",
+                "INSUFFICIENT DATA"
+              ],
+              "description": "Forensic assessment result"
+            },
+            "monotonic_append_ratio": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "description": "Fraction of edits at document end"
+            },
+            "edit_entropy": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Shannon entropy of edit positions"
+            },
+            "anomaly_count": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Number of anomalies detected"
+            },
+            "anomaly_types": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": ["gap", "high_velocity", "monotonic_append", "low_entropy"]
+              },
+              "description": "Types of anomalies detected"
+            }
+          },
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "anchor_check_result": {
+      "type": "object",
+      "required": ["status"],
+      "properties": {
+        "status": {
+          "$ref": "#/$defs/check_status"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "object",
+          "properties": {
+            "total_anchors": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Total number of external anchors"
+            },
+            "confirmed_anchors": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Number of confirmed anchors"
+            },
+            "pending_anchors": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Number of pending anchors"
+            },
+            "failed_anchors": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Number of failed anchors"
+            },
+            "earliest_anchor": {
+              "type": "string",
+              "format": "date-time",
+              "description": "Earliest confirmed anchor timestamp"
+            },
+            "providers": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "List of anchor providers used"
+            },
+            "legal_standing": {
+              "type": "string",
+              "enum": ["none", "evidentiary", "legal", "qualified"],
+              "description": "Highest legal standing of confirmed anchors"
+            }
+          },
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "verified_claim": {
+      "type": "object",
+      "required": ["type", "verified", "description"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "Claim type from the evidence packet"
+        },
+        "verified": {
+          "type": "boolean",
+          "description": "Whether the claim was verified"
+        },
+        "description": {
+          "type": "string",
+          "description": "Claim description from the evidence packet"
+        },
+        "verification_note": {
+          "type": "string",
+          "description": "Additional note about verification"
+        }
+      },
+      "additionalProperties": false
+    },
+    "warning": {
+      "type": "object",
+      "required": ["code", "message"],
+      "properties": {
+        "code": {
+          "type": "string",
+          "pattern": "^W[0-9]{3}$",
+          "description": "Warning code (e.g., W001)"
+        },
+        "message": {
+          "type": "string",
+          "description": "Human-readable warning message"
+        },
+        "severity": {
+          "type": "string",
+          "enum": ["low", "medium", "high"],
+          "description": "Warning severity level"
+        },
+        "context": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Additional context about the warning"
+        }
+      },
+      "additionalProperties": false
+    },
+    "error": {
+      "type": "object",
+      "required": ["code", "message"],
+      "properties": {
+        "code": {
+          "type": "string",
+          "pattern": "^E[0-9]{3}$",
+          "description": "Error code (e.g., E001)"
+        },
+        "message": {
+          "type": "string",
+          "description": "Human-readable error message"
+        },
+        "fatal": {
+          "type": "boolean",
+          "default": true,
+          "description": "Whether this error caused verification to fail"
+        },
+        "context": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Additional context about the error"
+        }
+      },
+      "additionalProperties": false
+    },
+    "verification_metadata": {
+      "type": "object",
+      "properties": {
+        "arbiter_version": {
+          "type": "string",
+          "description": "Version of the verification tool"
+        },
+        "verification_duration_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Time taken to verify in milliseconds"
+        },
+        "document_provided": {
+          "type": "boolean",
+          "description": "Whether the original document was provided for hash verification"
+        },
+        "vdf_verification_method": {
+          "type": "string",
+          "enum": ["full", "sampling", "skipped"],
+          "description": "How VDF proofs were verified"
+        },
+        "anchor_verification_online": {
+          "type": "boolean",
+          "description": "Whether anchor verification contacted external services"
+        }
+      },
+      "additionalProperties": true
+    }
+  }
+}

@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://witnessd.dev/schema/v1/witness-proof.json",
+  "$id": "https://raw.githubusercontent.com/writerslogic/witnessd/main/docs/schema/witness-proof-v1.schema.json",
   "title": "Witness Evidence Packet",
   "description": "A self-contained cryptographic proof of document witnessing per Witness Protocol v1",
   "type": "object",

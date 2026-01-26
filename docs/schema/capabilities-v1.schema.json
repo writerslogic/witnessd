@@ -1,0 +1,277 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/writerslogic/witnessd/main/docs/schema/capabilities-v1.schema.json",
+  "title": "Linux Capabilities Configuration",
+  "description": "Linux capabilities and security hardening configuration for witnessd daemon",
+  "type": "object",
+  "required": ["version", "description", "capabilities"],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "format": "uri"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+      "description": "Semantic version of the configuration"
+    },
+    "description": {
+      "type": "string",
+      "description": "Human-readable description"
+    },
+    "capabilities": {
+      "$ref": "#/$defs/capabilities",
+      "description": "Linux capability requirements"
+    },
+    "deployment_modes": {
+      "$ref": "#/$defs/deployment_modes",
+      "description": "Supported deployment configurations"
+    },
+    "systemd_hardening": {
+      "$ref": "#/$defs/systemd_hardening",
+      "description": "Recommended systemd security settings"
+    },
+    "seccomp": {
+      "$ref": "#/$defs/seccomp",
+      "description": "Seccomp profile configuration"
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "capabilities": {
+      "type": "object",
+      "properties": {
+        "required": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/capability_entry"
+          },
+          "description": "Capabilities required for operation"
+        },
+        "optional": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/capability_entry"
+          },
+          "description": "Capabilities that enhance functionality but are not required"
+        },
+        "never_required": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/excluded_capability"
+          },
+          "description": "Capabilities that should never be granted"
+        }
+      },
+      "additionalProperties": false
+    },
+    "capability_entry": {
+      "type": "object",
+      "required": ["name", "reason"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^CAP_[A-Z_]+$",
+          "description": "Linux capability name (e.g., CAP_SYS_ADMIN)"
+        },
+        "reason": {
+          "type": "string",
+          "description": "Why this capability is needed"
+        },
+        "scope": {
+          "type": "string",
+          "description": "Which operations require this capability"
+        },
+        "alternatives": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Alternative approaches that don't require this capability"
+        },
+        "note": {
+          "type": "string",
+          "description": "Additional notes"
+        }
+      },
+      "additionalProperties": false
+    },
+    "excluded_capability": {
+      "type": "object",
+      "required": ["name", "reason"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^CAP_[A-Z_]+$",
+          "description": "Linux capability name"
+        },
+        "reason": {
+          "type": "string",
+          "description": "Why this capability is not needed"
+        }
+      },
+      "additionalProperties": false
+    },
+    "deployment_modes": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/deployment_mode"
+      },
+      "description": "Named deployment configurations"
+    },
+    "deployment_mode": {
+      "type": "object",
+      "required": ["name", "description"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Display name for this mode"
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of this deployment mode"
+        },
+        "setup": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Setup commands or steps"
+        },
+        "capabilities_needed": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^CAP_[A-Z_]+$"
+          },
+          "description": "Capabilities required for this mode"
+        },
+        "notes": {
+          "type": "string",
+          "description": "Additional notes"
+        }
+      },
+      "additionalProperties": false
+    },
+    "systemd_hardening": {
+      "type": "object",
+      "properties": {
+        "description": {
+          "type": "string"
+        },
+        "settings": {
+          "type": "object",
+          "properties": {
+            "CapabilityBoundingSet": {
+              "type": "string",
+              "description": "Capabilities to include in bounding set"
+            },
+            "AmbientCapabilities": {
+              "type": "string",
+              "description": "Ambient capabilities"
+            },
+            "NoNewPrivileges": {
+              "type": "boolean",
+              "description": "Prevent privilege escalation"
+            },
+            "ProtectSystem": {
+              "type": "string",
+              "enum": ["true", "full", "strict"],
+              "description": "Mount system directories read-only"
+            },
+            "ProtectHome": {
+              "type": "boolean",
+              "description": "Make home directories inaccessible"
+            },
+            "PrivateTmp": {
+              "type": "boolean",
+              "description": "Use private /tmp and /var/tmp"
+            },
+            "PrivateDevices": {
+              "type": "boolean",
+              "description": "Restrict access to device nodes"
+            },
+            "DeviceAllow": {
+              "type": "string",
+              "description": "Specific device access rules"
+            },
+            "ProtectKernelTunables": {
+              "type": "boolean",
+              "description": "Make kernel tunables read-only"
+            },
+            "ProtectKernelModules": {
+              "type": "boolean",
+              "description": "Prevent module loading"
+            },
+            "ProtectControlGroups": {
+              "type": "boolean",
+              "description": "Make cgroup hierarchy read-only"
+            },
+            "RestrictAddressFamilies": {
+              "type": "string",
+              "description": "Allowed address families"
+            },
+            "RestrictNamespaces": {
+              "type": "boolean",
+              "description": "Restrict namespace creation"
+            },
+            "LockPersonality": {
+              "type": "boolean",
+              "description": "Lock execution personality"
+            },
+            "MemoryDenyWriteExecute": {
+              "type": "boolean",
+              "description": "Prevent W^X violations"
+            },
+            "RestrictRealtime": {
+              "type": "boolean",
+              "description": "Restrict realtime scheduling"
+            },
+            "RestrictSUIDSGID": {
+              "type": "boolean",
+              "description": "Restrict SUID/SGID file creation"
+            },
+            "SystemCallArchitectures": {
+              "type": "string",
+              "description": "Allowed syscall architectures"
+            },
+            "SystemCallFilter": {
+              "type": "string",
+              "description": "Syscall filter set"
+            }
+          },
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "seccomp": {
+      "type": "object",
+      "properties": {
+        "description": {
+          "type": "string"
+        },
+        "default_action": {
+          "type": "string",
+          "enum": ["SCMP_ACT_ALLOW", "SCMP_ACT_ERRNO", "SCMP_ACT_KILL", "SCMP_ACT_LOG"],
+          "description": "Default action for unlisted syscalls"
+        },
+        "allowed_syscalls": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "List of allowed system calls"
+        },
+        "denied_syscalls": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "List of explicitly denied system calls"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

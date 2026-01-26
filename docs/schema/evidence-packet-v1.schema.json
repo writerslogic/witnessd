@@ -1,0 +1,941 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/writerslogic/witnessd/main/docs/schema/evidence-packet-v1.schema.json",
+  "title": "Evidence Packet",
+  "description": "A self-contained cryptographic proof of documented authorship. Evidence packets combine checkpoint chains, declarations, and optional attestations into a portable, verifiable format.",
+  "type": "object",
+  "required": [
+    "version",
+    "exported_at",
+    "strength",
+    "document",
+    "checkpoints",
+    "vdf_params",
+    "chain_hash",
+    "declaration",
+    "claims",
+    "limitations"
+  ],
+  "properties": {
+    "version": {
+      "type": "integer",
+      "const": 1,
+      "description": "Schema version number"
+    },
+    "exported_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when evidence packet was exported"
+    },
+    "strength": {
+      "$ref": "#/$defs/strength",
+      "description": "Evidence tier indicating which verification layers are present"
+    },
+    "document": {
+      "$ref": "#/$defs/document_info",
+      "description": "Metadata about the witnessed document"
+    },
+    "checkpoints": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/checkpoint_proof"
+      },
+      "minItems": 1,
+      "description": "Layer 0: Ordered sequence of content commits forming the checkpoint chain"
+    },
+    "vdf_params": {
+      "$ref": "#/$defs/vdf_parameters",
+      "description": "Verifiable Delay Function parameters used for time proofs"
+    },
+    "chain_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$",
+      "description": "Hex-encoded SHA-256 hash of the final checkpoint (chain tip)"
+    },
+    "declaration": {
+      "$ref": "#/$defs/declaration",
+      "description": "Layer 1: Signed attestation of creative process (required)"
+    },
+    "presence": {
+      "$ref": "#/$defs/presence_evidence",
+      "description": "Layer 2: Presence verification evidence (Standard+ tier)"
+    },
+    "hardware": {
+      "$ref": "#/$defs/hardware_evidence",
+      "description": "Layer 3: TPM hardware attestation evidence (Enhanced+ tier)"
+    },
+    "keystroke": {
+      "$ref": "#/$defs/keystroke_evidence",
+      "description": "Layer 4a: Jitter-based keystroke evidence proving real typing occurred"
+    },
+    "behavioral": {
+      "$ref": "#/$defs/behavioral_evidence",
+      "description": "Layer 4b: Edit topology and forensic metrics (Maximum tier, opt-in)"
+    },
+    "contexts": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/context_period"
+      },
+      "description": "Layer 4c: Runtime-tracked editing context periods"
+    },
+    "external": {
+      "$ref": "#/$defs/external_anchors",
+      "description": "Layer 5: External timestamp proofs from third-party authorities (Maximum tier)"
+    },
+    "claims": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/claim"
+      },
+      "minItems": 1,
+      "description": "What this evidence cryptographically proves"
+    },
+    "limitations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Explicit statements of what this evidence cannot prove"
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "strength": {
+      "type": "integer",
+      "enum": [1, 2, 3, 4],
+      "description": "Evidence tier: 1=basic (commits+declaration), 2=standard (+presence), 3=enhanced (+hardware), 4=maximum (+behavioral+anchors)"
+    },
+    "document_info": {
+      "type": "object",
+      "required": ["title", "path", "final_hash", "final_size"],
+      "properties": {
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Human-readable document title"
+        },
+        "path": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Original file path of the witnessed document"
+        },
+        "final_hash": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$",
+          "description": "Hex-encoded SHA-256 hash of final document content"
+        },
+        "final_size": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Final document size in bytes"
+        }
+      },
+      "additionalProperties": false
+    },
+    "checkpoint_proof": {
+      "type": "object",
+      "required": ["ordinal", "content_hash", "content_size", "timestamp", "previous_hash", "hash"],
+      "properties": {
+        "ordinal": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Checkpoint sequence number (0-indexed)"
+        },
+        "content_hash": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$",
+          "description": "Hex-encoded SHA-256 hash of document content at this checkpoint"
+        },
+        "content_size": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Document size in bytes at this checkpoint"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO 8601 timestamp when checkpoint was created"
+        },
+        "message": {
+          "type": "string",
+          "description": "Optional commit message describing changes"
+        },
+        "vdf_input": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$",
+          "description": "Hex-encoded VDF input (derived from previous checkpoint)"
+        },
+        "vdf_output": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$",
+          "description": "Hex-encoded VDF output after iterations"
+        },
+        "vdf_iterations": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of VDF iterations computed"
+        },
+        "elapsed_time": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Minimum elapsed time in nanoseconds (derived from VDF iterations)"
+        },
+        "previous_hash": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$",
+          "description": "Hex-encoded hash of previous checkpoint (zeros for first)"
+        },
+        "hash": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$",
+          "description": "Hex-encoded hash of this checkpoint"
+        }
+      },
+      "additionalProperties": false
+    },
+    "vdf_parameters": {
+      "type": "object",
+      "required": ["modulus", "iterations_per_sec", "security_param"],
+      "properties": {
+        "modulus": {
+          "type": "string",
+          "pattern": "^[a-f0-9]+$",
+          "description": "Hex-encoded RSA-2048 modulus for VDF computation"
+        },
+        "iterations_per_sec": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Calibrated VDF iterations per second for this device"
+        },
+        "security_param": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Security parameter in bits"
+        }
+      },
+      "additionalProperties": false
+    },
+    "declaration": {
+      "type": "object",
+      "required": [
+        "document_hash",
+        "chain_hash",
+        "title",
+        "input_modalities",
+        "ai_tools",
+        "statement",
+        "created_at",
+        "version",
+        "author_public_key",
+        "signature"
+      ],
+      "properties": {
+        "document_hash": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$",
+          "description": "Hex-encoded SHA-256 hash of document being declared"
+        },
+        "chain_hash": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$",
+          "description": "Hex-encoded hash of checkpoint chain being declared"
+        },
+        "title": {
+          "type": "string",
+          "description": "Document title as declared by author"
+        },
+        "input_modalities": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/input_modality"
+          },
+          "description": "Input methods used during composition"
+        },
+        "ai_tools": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ai_tool_usage"
+          },
+          "description": "AI tools used during composition (empty if none)"
+        },
+        "collaborators": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/collaborator"
+          },
+          "description": "Human collaborators involved in the work"
+        },
+        "statement": {
+          "type": "string",
+          "description": "Freeform declaration statement by the author"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO 8601 timestamp when declaration was signed"
+        },
+        "version": {
+          "type": "integer",
+          "description": "Declaration format version"
+        },
+        "author_public_key": {
+          "type": "string",
+          "contentEncoding": "base64",
+          "description": "Base64-encoded Ed25519 public key of the author"
+        },
+        "signature": {
+          "type": "string",
+          "contentEncoding": "base64",
+          "description": "Base64-encoded Ed25519 signature over declaration content"
+        }
+      },
+      "additionalProperties": false
+    },
+    "input_modality": {
+      "type": "object",
+      "required": ["type", "percentage"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["keyboard", "dictation", "handwriting", "paste", "import", "mixed", "other"],
+          "description": "Type of input method"
+        },
+        "percentage": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Estimated percentage of content from this modality"
+        },
+        "note": {
+          "type": "string",
+          "description": "Optional clarifying note"
+        }
+      },
+      "additionalProperties": false
+    },
+    "ai_tool_usage": {
+      "type": "object",
+      "required": ["tool", "purpose", "extent"],
+      "properties": {
+        "tool": {
+          "type": "string",
+          "description": "Name of the AI tool (e.g., 'ChatGPT', 'Claude', 'Copilot')"
+        },
+        "version": {
+          "type": "string",
+          "description": "Version of the AI tool if known"
+        },
+        "purpose": {
+          "type": "string",
+          "enum": ["ideation", "outline", "drafting", "feedback", "editing", "research", "formatting", "other"],
+          "description": "Primary purpose of AI tool usage"
+        },
+        "interaction": {
+          "type": "string",
+          "description": "Description of how the tool was used"
+        },
+        "extent": {
+          "type": "string",
+          "enum": ["none", "minimal", "moderate", "substantial"],
+          "description": "Extent of AI contribution to the work"
+        },
+        "sections": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Specific sections where AI was used"
+        }
+      },
+      "additionalProperties": false
+    },
+    "collaborator": {
+      "type": "object",
+      "required": ["name", "role"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Collaborator's name"
+        },
+        "role": {
+          "type": "string",
+          "enum": ["co-author", "editor", "research_assistant", "reviewer", "transcriber", "other"],
+          "description": "Collaborator's role in the work"
+        },
+        "sections": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Sections the collaborator contributed to"
+        },
+        "public_key": {
+          "type": "string",
+          "contentEncoding": "base64",
+          "description": "Optional Ed25519 public key for co-signing"
+        }
+      },
+      "additionalProperties": false
+    },
+    "presence_evidence": {
+      "type": "object",
+      "required": ["challenges_issued", "challenges_passed", "overall_rate"],
+      "properties": {
+        "challenges_issued": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Total number of presence challenges issued"
+        },
+        "challenges_passed": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of challenges successfully completed"
+        },
+        "overall_rate": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Success rate as decimal (0.0 to 1.0)"
+        },
+        "sessions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/presence_session"
+          },
+          "description": "Individual presence verification sessions"
+        }
+      },
+      "additionalProperties": false
+    },
+    "presence_session": {
+      "type": "object",
+      "required": ["started_at", "ended_at", "challenge_type", "passed"],
+      "properties": {
+        "started_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Session start time"
+        },
+        "ended_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Session end time"
+        },
+        "challenge_type": {
+          "type": "string",
+          "description": "Type of presence challenge"
+        },
+        "passed": {
+          "type": "boolean",
+          "description": "Whether the challenge was passed"
+        },
+        "response_time_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Response time in milliseconds"
+        }
+      },
+      "additionalProperties": false
+    },
+    "hardware_evidence": {
+      "type": "object",
+      "required": ["bindings", "device_id"],
+      "properties": {
+        "bindings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/tpm_binding"
+          },
+          "minItems": 1,
+          "description": "TPM attestation bindings"
+        },
+        "device_id": {
+          "type": "string",
+          "description": "Unique device identifier"
+        }
+      },
+      "additionalProperties": false
+    },
+    "tpm_binding": {
+      "type": "object",
+      "required": ["chain_hash", "timestamp", "quote", "signature"],
+      "properties": {
+        "chain_hash": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$",
+          "description": "Chain hash that was attested"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Time of attestation"
+        },
+        "quote": {
+          "type": "string",
+          "contentEncoding": "base64",
+          "description": "Base64-encoded TPM quote structure"
+        },
+        "signature": {
+          "type": "string",
+          "contentEncoding": "base64",
+          "description": "Base64-encoded TPM signature"
+        },
+        "pcr_values": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "PCR values at attestation time"
+        },
+        "ak_public": {
+          "type": "string",
+          "contentEncoding": "base64",
+          "description": "Base64-encoded attestation key public part"
+        }
+      },
+      "additionalProperties": false
+    },
+    "keystroke_evidence": {
+      "type": "object",
+      "required": [
+        "session_id",
+        "started_at",
+        "ended_at",
+        "duration",
+        "total_keystrokes",
+        "total_samples",
+        "keystrokes_per_minute",
+        "unique_document_states",
+        "chain_valid",
+        "plausible_human_rate"
+      ],
+      "properties": {
+        "session_id": {
+          "type": "string",
+          "description": "Unique identifier for the keystroke session"
+        },
+        "started_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Session start time"
+        },
+        "ended_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Session end time"
+        },
+        "duration": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Session duration in nanoseconds"
+        },
+        "total_keystrokes": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Total number of keystrokes recorded"
+        },
+        "total_samples": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of jitter samples collected"
+        },
+        "keystrokes_per_minute": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Average typing speed"
+        },
+        "unique_document_states": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of unique document content hashes observed"
+        },
+        "chain_valid": {
+          "type": "boolean",
+          "description": "Whether the sample chain has cryptographic integrity"
+        },
+        "plausible_human_rate": {
+          "type": "boolean",
+          "description": "Whether typing rate is consistent with human input"
+        },
+        "samples": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/jitter_sample"
+          },
+          "description": "Individual jitter samples for full verification"
+        }
+      },
+      "additionalProperties": false
+    },
+    "jitter_sample": {
+      "type": "object",
+      "required": ["n", "t", "h", "z", "b", "j", "s"],
+      "properties": {
+        "n": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Sample ordinal (sequence number)"
+        },
+        "t": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Sample timestamp"
+        },
+        "h": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$",
+          "description": "Document content hash at sample time"
+        },
+        "z": {
+          "type": "string",
+          "description": "Zone transition identifier"
+        },
+        "b": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 255,
+          "description": "Interval bucket (quantized inter-keystroke time)"
+        },
+        "j": {
+          "type": "integer",
+          "description": "Jitter value in microseconds"
+        },
+        "s": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$",
+          "description": "Chained sample hash for integrity verification"
+        }
+      },
+      "additionalProperties": false
+    },
+    "behavioral_evidence": {
+      "type": "object",
+      "properties": {
+        "edit_topology": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/edit_region"
+          },
+          "description": "Edit positions and types (privacy-preserving)"
+        },
+        "metrics": {
+          "$ref": "#/$defs/forensic_metrics",
+          "description": "Computed forensic metrics"
+        }
+      },
+      "additionalProperties": false
+    },
+    "edit_region": {
+      "type": "object",
+      "required": ["start_pct", "end_pct", "delta_sign", "byte_count"],
+      "properties": {
+        "start_pct": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Start position as fraction of document length"
+        },
+        "end_pct": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "End position as fraction of document length"
+        },
+        "delta_sign": {
+          "type": "integer",
+          "enum": [0, 1, 2],
+          "description": "Edit type: 0=replace, 1=insert, 2=delete"
+        },
+        "byte_count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of bytes affected"
+        }
+      },
+      "additionalProperties": false
+    },
+    "forensic_metrics": {
+      "type": "object",
+      "required": [
+        "monotonic_append_ratio",
+        "edit_entropy",
+        "median_interval_seconds",
+        "positive_negative_ratio",
+        "deletion_clustering"
+      ],
+      "properties": {
+        "monotonic_append_ratio": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Fraction of edits at document end (position >= 0.95)"
+        },
+        "edit_entropy": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Shannon entropy of edit position histogram (20 bins)"
+        },
+        "median_interval_seconds": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Median time between consecutive edits in seconds"
+        },
+        "positive_negative_ratio": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Ratio of insertions to total non-replacement edits"
+        },
+        "deletion_clustering": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Nearest-neighbor distance ratio for deletions"
+        },
+        "assessment": {
+          "type": "string",
+          "enum": [
+            "CONSISTENT WITH HUMAN AUTHORSHIP",
+            "SUSPICIOUS PATTERNS DETECTED",
+            "INSUFFICIENT DATA"
+          ],
+          "description": "Overall behavioral assessment"
+        },
+        "anomaly_count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of anomalies detected"
+        }
+      },
+      "additionalProperties": false
+    },
+    "context_period": {
+      "type": "object",
+      "required": ["type", "start_time", "end_time"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["external", "assisted", "review"],
+          "description": "Context type: external=outside content, assisted=AI help, review=revision pass"
+        },
+        "note": {
+          "type": "string",
+          "description": "Freeform explanation of the context"
+        },
+        "start_time": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When context period began"
+        },
+        "end_time": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When context period ended"
+        }
+      },
+      "additionalProperties": false
+    },
+    "external_anchors": {
+      "type": "object",
+      "properties": {
+        "opentimestamps": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ots_proof"
+          },
+          "description": "OpenTimestamps Bitcoin anchors (legacy format)"
+        },
+        "rfc3161": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/rfc3161_proof"
+          },
+          "description": "RFC 3161 TSA proofs (legacy format)"
+        },
+        "proofs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/anchor_proof"
+          },
+          "description": "Unified anchor proofs (preferred format)"
+        }
+      },
+      "additionalProperties": false
+    },
+    "ots_proof": {
+      "type": "object",
+      "required": ["chain_hash", "proof", "status"],
+      "properties": {
+        "chain_hash": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$",
+          "description": "Chain hash that was anchored"
+        },
+        "proof": {
+          "type": "string",
+          "contentEncoding": "base64",
+          "description": "Base64-encoded OpenTimestamps proof"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["pending", "confirmed"],
+          "description": "Anchor status"
+        },
+        "block_height": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Bitcoin block height (if confirmed)"
+        },
+        "block_time": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Bitcoin block timestamp (if confirmed)"
+        }
+      },
+      "additionalProperties": false
+    },
+    "rfc3161_proof": {
+      "type": "object",
+      "required": ["chain_hash", "tsa_url", "response", "timestamp"],
+      "properties": {
+        "chain_hash": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$",
+          "description": "Chain hash that was timestamped"
+        },
+        "tsa_url": {
+          "type": "string",
+          "format": "uri",
+          "description": "URL of the Time Stamping Authority"
+        },
+        "response": {
+          "type": "string",
+          "contentEncoding": "base64",
+          "description": "Base64-encoded TimeStampResp"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp from the TSA"
+        }
+      },
+      "additionalProperties": false
+    },
+    "anchor_proof": {
+      "type": "object",
+      "required": ["provider", "hash", "timestamp", "status", "raw_proof"],
+      "properties": {
+        "provider": {
+          "type": "string",
+          "description": "Provider identifier (e.g., 'opentimestamps', 'rfc3161', 'eidas')"
+        },
+        "provider_name": {
+          "type": "string",
+          "description": "Human-readable provider name"
+        },
+        "legal_standing": {
+          "type": "string",
+          "enum": ["none", "evidentiary", "legal", "qualified"],
+          "description": "Legal standing of this proof type"
+        },
+        "regions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Jurisdictions where this proof has legal recognition"
+        },
+        "hash": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$",
+          "description": "Hash that was anchored"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp from the anchor"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["pending", "confirmed", "failed", "expired", "revoked"],
+          "description": "Current status of the proof"
+        },
+        "raw_proof": {
+          "type": "string",
+          "contentEncoding": "base64",
+          "description": "Base64-encoded raw proof data"
+        },
+        "blockchain": {
+          "$ref": "#/$defs/blockchain_anchor_info",
+          "description": "Blockchain-specific details (if applicable)"
+        },
+        "verify_url": {
+          "type": "string",
+          "format": "uri",
+          "description": "URL for independent verification"
+        }
+      },
+      "additionalProperties": false
+    },
+    "blockchain_anchor_info": {
+      "type": "object",
+      "required": ["chain", "block_height", "block_time"],
+      "properties": {
+        "chain": {
+          "type": "string",
+          "description": "Blockchain name (e.g., 'bitcoin', 'ethereum')"
+        },
+        "block_height": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Block number"
+        },
+        "block_hash": {
+          "type": "string",
+          "description": "Block hash"
+        },
+        "block_time": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Block timestamp"
+        },
+        "tx_id": {
+          "type": "string",
+          "description": "Transaction ID containing the anchor"
+        }
+      },
+      "additionalProperties": false
+    },
+    "claim": {
+      "type": "object",
+      "required": ["type", "description", "confidence"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "chain_integrity",
+            "time_elapsed",
+            "process_declared",
+            "presence_verified",
+            "keystrokes_verified",
+            "hardware_attested",
+            "behavior_analyzed",
+            "contexts_recorded",
+            "external_anchored"
+          ],
+          "description": "Category of claim"
+        },
+        "description": {
+          "type": "string",
+          "description": "Human-readable description of what is proven"
+        },
+        "confidence": {
+          "type": "string",
+          "enum": ["cryptographic", "attestation", "statistical"],
+          "description": "Basis for the claim: cryptographic (mathematical), attestation (signed declaration), statistical (behavioral analysis)"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

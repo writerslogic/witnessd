@@ -1,0 +1,519 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/writerslogic/witnessd/main/docs/schema/tpm-policy-v1.schema.json",
+  "title": "TPM Policy Configuration",
+  "description": "TPM 2.0 policy configuration for witnessd key protection and attestation",
+  "type": "object",
+  "required": ["version", "description", "policy"],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "format": "uri"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+      "description": "Semantic version of the policy configuration"
+    },
+    "description": {
+      "type": "string",
+      "description": "Human-readable description of the policy"
+    },
+    "architecture": {
+      "$ref": "#/$defs/architecture",
+      "description": "Architectural overview of TPM usage"
+    },
+    "policy": {
+      "$ref": "#/$defs/policy",
+      "description": "Key sealing policy configuration"
+    },
+    "attestation": {
+      "$ref": "#/$defs/attestation",
+      "description": "TPM attestation configuration"
+    },
+    "recovery": {
+      "$ref": "#/$defs/recovery",
+      "description": "Recovery procedures for PCR changes"
+    },
+    "audit": {
+      "$ref": "#/$defs/audit",
+      "description": "Audit logging configuration"
+    },
+    "compatibility": {
+      "$ref": "#/$defs/compatibility",
+      "description": "TPM compatibility requirements"
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "architecture": {
+      "type": "object",
+      "required": ["summary", "approach"],
+      "properties": {
+        "summary": {
+          "type": "string",
+          "description": "Brief summary of the architecture"
+        },
+        "rationale": {
+          "type": "string",
+          "description": "Rationale for architectural decisions"
+        },
+        "approach": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Step-by-step approach"
+        },
+        "security_properties": {
+          "type": "object",
+          "properties": {
+            "key_at_rest": {
+              "type": "string",
+              "description": "How key is protected at rest"
+            },
+            "key_in_use": {
+              "type": "string",
+              "description": "How key is protected during use"
+            },
+            "extraction_resistance": {
+              "type": "string",
+              "description": "Resistance to key extraction"
+            }
+          },
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "policy": {
+      "type": "object",
+      "required": ["name", "pcr_selection"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Policy identifier"
+        },
+        "description": {
+          "type": "string",
+          "description": "Policy description"
+        },
+        "pcr_selection": {
+          "$ref": "#/$defs/pcr_selection",
+          "description": "PCR selection for policy"
+        },
+        "authorization": {
+          "$ref": "#/$defs/authorization",
+          "description": "Authorization configuration"
+        },
+        "sealed_object": {
+          "$ref": "#/$defs/sealed_object",
+          "description": "Sealed object configuration"
+        },
+        "signing": {
+          "$ref": "#/$defs/signing_config",
+          "description": "Signing configuration"
+        }
+      },
+      "additionalProperties": false
+    },
+    "pcr_selection": {
+      "type": "object",
+      "required": ["hash_algorithm", "pcrs"],
+      "properties": {
+        "hash_algorithm": {
+          "type": "string",
+          "enum": ["sha1", "sha256", "sha384", "sha512"],
+          "description": "Hash algorithm for PCR bank"
+        },
+        "pcrs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/pcr_entry"
+          },
+          "description": "PCR entries to include in policy"
+        },
+        "excluded": {
+          "type": "object",
+          "properties": {
+            "note": {
+              "type": "string"
+            },
+            "pcrs": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["index", "reason"],
+                "properties": {
+                  "index": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 23
+                  },
+                  "reason": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "pcr_entry": {
+      "type": "object",
+      "required": ["index", "description"],
+      "properties": {
+        "index": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 23,
+          "description": "PCR index (0-23)"
+        },
+        "description": {
+          "type": "string",
+          "description": "What this PCR measures"
+        },
+        "required": {
+          "type": "boolean",
+          "description": "Whether this PCR is required in the policy"
+        },
+        "note": {
+          "type": "string",
+          "description": "Additional notes"
+        }
+      },
+      "additionalProperties": false
+    },
+    "authorization": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["policy_session", "password", "hmac"],
+          "description": "Authorization type"
+        },
+        "commands": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "TPM commands used in authorization"
+        },
+        "password_required": {
+          "type": "boolean",
+          "description": "Whether password is required"
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "sealed_object": {
+      "type": "object",
+      "required": ["type", "content"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["sealed_data", "key"],
+          "description": "Type of sealed object"
+        },
+        "content": {
+          "type": "string",
+          "description": "Description of sealed content"
+        },
+        "parent_key": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string"
+            },
+            "algorithm": {
+              "type": "string",
+              "enum": ["rsa", "ecc"]
+            },
+            "curve": {
+              "type": "string"
+            },
+            "note": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        "attributes": {
+          "type": "object",
+          "properties": {
+            "fixed_tpm": {
+              "type": "boolean"
+            },
+            "fixed_parent": {
+              "type": "boolean"
+            },
+            "user_with_auth": {
+              "type": "boolean"
+            },
+            "no_da": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "signing_config": {
+      "type": "object",
+      "required": ["algorithm"],
+      "properties": {
+        "algorithm": {
+          "type": "string",
+          "enum": ["ed25519", "ecdsa", "rsa"],
+          "description": "Signing algorithm"
+        },
+        "key_size": {
+          "type": "integer",
+          "description": "Key size in bits"
+        },
+        "execution": {
+          "type": "string",
+          "enum": ["software", "hardware"],
+          "description": "Where signing occurs"
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "attestation": {
+      "type": "object",
+      "properties": {
+        "description": {
+          "type": "string"
+        },
+        "attestation_key": {
+          "$ref": "#/$defs/attestation_key"
+        },
+        "quote": {
+          "$ref": "#/$defs/quote_config"
+        },
+        "ak_certificate": {
+          "type": "object",
+          "properties": {
+            "description": {
+              "type": "string"
+            },
+            "validation": {
+              "type": "string"
+            },
+            "note": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "attestation_key": {
+      "type": "object",
+      "required": ["type", "algorithm"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "Key type description"
+        },
+        "algorithm": {
+          "type": "string",
+          "enum": ["rsa", "ecc"]
+        },
+        "key_size": {
+          "type": "integer"
+        },
+        "scheme": {
+          "type": "string"
+        },
+        "tpm_alg_id": {
+          "type": "string"
+        },
+        "hash_alg": {
+          "type": "string"
+        },
+        "note": {
+          "type": "string"
+        },
+        "cli_create": {
+          "type": "string",
+          "description": "CLI command to create this key"
+        }
+      },
+      "additionalProperties": false
+    },
+    "quote_config": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "pcr_selection": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 23
+          }
+        },
+        "hash_algorithm": {
+          "type": "string",
+          "enum": ["sha1", "sha256", "sha384", "sha512"]
+        },
+        "signing_key": {
+          "type": "string"
+        },
+        "note": {
+          "type": "string"
+        },
+        "cli_commands": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "CLI commands for quote operations"
+        }
+      },
+      "additionalProperties": false
+    },
+    "recovery": {
+      "type": "object",
+      "properties": {
+        "description": {
+          "type": "string"
+        },
+        "reseal": {
+          "$ref": "#/$defs/recovery_procedure"
+        },
+        "unseal_test": {
+          "$ref": "#/$defs/recovery_procedure"
+        },
+        "backup_restore": {
+          "type": "object",
+          "properties": {
+            "description": {
+              "type": "string"
+            },
+            "requires": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "note": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "recovery_procedure": {
+      "type": "object",
+      "properties": {
+        "description": {
+          "type": "string"
+        },
+        "requires": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "cli_commands": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "audit": {
+      "type": "object",
+      "properties": {
+        "log_paths": {
+          "type": "object",
+          "properties": {
+            "linux": {
+              "type": "string"
+            },
+            "darwin": {
+              "type": "string"
+            },
+            "windows": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": true
+        },
+        "events": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Events to audit"
+        }
+      },
+      "additionalProperties": false
+    },
+    "compatibility": {
+      "type": "object",
+      "properties": {
+        "minimum_tpm_version": {
+          "type": "string",
+          "description": "Minimum TPM specification version"
+        },
+        "required_commands": {
+          "type": "object",
+          "properties": {
+            "key_sealing": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "attestation": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "optional": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "note": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        "tested_implementations": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "TPM implementations that have been tested"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

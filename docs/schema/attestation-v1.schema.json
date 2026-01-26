@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/writerslogic/witnessd/main/docs/schema/attestation-v1.schema.json",
+  "title": "TPM Attestation Template",
+  "description": "Template describing TPM attestation structure and verification steps",
+  "type": "object",
+  "required": [
+    "$schema",
+    "version",
+    "description",
+    "attestation",
+    "identity_binding",
+    "evidence_packet",
+    "verification_steps"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "format": "uri"
+    },
+    "version": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "attestation": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": { "type": "string" },
+        "description": { "type": "string" },
+        "quote_structure": { "type": "object" },
+        "signature": { "type": "object" }
+      },
+      "additionalProperties": true
+    },
+    "identity_binding": {
+      "type": "object",
+      "properties": {
+        "endorsement_key": { "type": "object" },
+        "attestation_key": { "type": "object" }
+      },
+      "additionalProperties": true
+    },
+    "evidence_packet": {
+      "type": "object",
+      "required": ["fields"],
+      "properties": {
+        "description": { "type": "string" },
+        "fields": { "type": "object" }
+      },
+      "additionalProperties": true
+    },
+    "verification_steps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["step", "name", "description"],
+        "properties": {
+          "step": { "type": "integer", "minimum": 1 },
+          "name": { "type": "string" },
+          "description": { "type": "string" },
+          "failure": { "type": "string" }
+        },
+        "additionalProperties": true
+      }
+    },
+    "legal_considerations": {
+      "type": "object"
+    },
+    "example_output": {
+      "type": "object"
+    }
+  },
+  "additionalProperties": true
+}

@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://witnessd.dev/schema/v1/forensic-profile.json",
+  "$id": "https://raw.githubusercontent.com/writerslogic/witnessd/main/docs/schema/forensic-profile-v1.schema.json",
   "title": "Forensic Authorship Profile",
   "description": "Statistical analysis of authorship patterns per Witness Protocol v1",
   "type": "object",
