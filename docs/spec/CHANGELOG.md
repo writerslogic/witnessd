@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `evidence-packet-v1.schema.json` - New schema for checkpoint chain evidence format
+- `verification-result-v1.schema.json` - Schema for arbiter verification output
+- `evidence-packet-v1.example.json` - Realistic example evidence packet
+- `PROTOCOL-UPDATE-RECOMMENDATIONS.md` - Migration guide from MMR to checkpoint chain
+
+### Deprecated
+
+- `witness-proof-v1.schema.json` - MMR-based format not used in current evidence exports
+
+### Changed
+
+- Evidence packet format now uses checkpoint chain with VDF proofs instead of MMR
+- Added support for keystroke evidence layer
+- Added support for process declaration layer
+- Added evidence strength tiers (basic, standard, enhanced, maximum)
+
 ## [1.0.0] - 2026-01-24
 
 ### Added

@@ -1,0 +1,205 @@
+{
+  "version": 1,
+  "exported_at": "2026-01-25T14:30:00Z",
+  "strength": 2,
+  "document": {
+    "title": "Quarterly Report Q4 2025",
+    "path": "/Users/alice/Documents/reports/q4-2025-report.md",
+    "final_hash": "a7b9c3d4e5f6a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6",
+    "final_size": 15234
+  },
+  "checkpoints": [
+    {
+      "ordinal": 0,
+      "content_hash": "1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b",
+      "content_size": 156,
+      "timestamp": "2026-01-25T09:00:00Z",
+      "message": "Initial outline",
+      "previous_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+      "hash": "2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c"
+    },
+    {
+      "ordinal": 1,
+      "content_hash": "3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d",
+      "content_size": 2847,
+      "timestamp": "2026-01-25T09:45:00Z",
+      "message": "Draft introduction and executive summary",
+      "vdf_input": "2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c",
+      "vdf_output": "4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e",
+      "vdf_iterations": 270000000,
+      "elapsed_time": 2700000000000,
+      "previous_hash": "2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c",
+      "hash": "5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f"
+    },
+    {
+      "ordinal": 2,
+      "content_hash": "6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a",
+      "content_size": 7823,
+      "timestamp": "2026-01-25T11:15:00Z",
+      "message": "Added financial analysis section",
+      "vdf_input": "5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f",
+      "vdf_output": "7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b",
+      "vdf_iterations": 540000000,
+      "elapsed_time": 5400000000000,
+      "previous_hash": "5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f",
+      "hash": "8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c"
+    },
+    {
+      "ordinal": 3,
+      "content_hash": "9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d",
+      "content_size": 12456,
+      "timestamp": "2026-01-25T13:00:00Z",
+      "message": "Completed market analysis and projections",
+      "vdf_input": "8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c",
+      "vdf_output": "0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e",
+      "vdf_iterations": 630000000,
+      "elapsed_time": 6300000000000,
+      "previous_hash": "8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c",
+      "hash": "1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f"
+    },
+    {
+      "ordinal": 4,
+      "content_hash": "a7b9c3d4e5f6a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6",
+      "content_size": 15234,
+      "timestamp": "2026-01-25T14:20:00Z",
+      "message": "Final revisions and conclusion",
+      "vdf_input": "1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f",
+      "vdf_output": "2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a",
+      "vdf_iterations": 480000000,
+      "elapsed_time": 4800000000000,
+      "previous_hash": "1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f",
+      "hash": "3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b"
+    }
+  ],
+  "vdf_params": {
+    "modulus": "c7970ceedcc3b0754490201a7aa613cd73911081c790f5f1a8726f463550bb5b7ff0db8e1ea1189ec72f93d1650011bd721aeeacc2acde32a04107f0648c2813a31f5b0b7765ff8b44b4b6ffc93384b646eb09c7cf5e8592d40ea33c80039f35b4f14a04b51f7bfd781be4d1673164ba8eb991c2c4d730bbbe35f592bdef524af7e8daefd26c66fc02c479af89d64d373f442709439de66ceb955f3ea37d5159f6135809f85334b5cb1813addc80cd05609f10ac6a95ad65872c909525bdad32bc729592642920f24c61dc5b3c3b7923e56b16a4d9d373d8721f24a3fc0f1b3131f55615172866bccc30f95054c824e733a5eb6817f7bc16399d48c6361cc7e5",
+    "iterations_per_sec": 100000,
+    "security_param": 128
+  },
+  "chain_hash": "3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b",
+  "declaration": {
+    "document_hash": "a7b9c3d4e5f6a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6",
+    "chain_hash": "3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b",
+    "title": "Quarterly Report Q4 2025",
+    "input_modalities": [
+      {
+        "type": "keyboard",
+        "percentage": 85,
+        "note": "Primary composition via keyboard"
+      },
+      {
+        "type": "paste",
+        "percentage": 15,
+        "note": "Financial data from spreadsheets"
+      }
+    ],
+    "ai_tools": [],
+    "statement": "I, Alice Johnson, declare that this quarterly report was authored by me during the witnessed session. Financial data was imported from verified company spreadsheets. No AI tools were used in the composition of this document.",
+    "created_at": "2026-01-25T14:25:00Z",
+    "version": 1,
+    "author_public_key": "MCowBQYDK2VwAyEAq5VnF0VhGQP+4w8J/4WMTuS6Kc8lJdN/rxq2R5e5X4k=",
+    "signature": "dGhpcyBpcyBhIG1vY2sgc2lnbmF0dXJlIGZvciBkZW1vbnN0cmF0aW9uIHB1cnBvc2VzIG9ubHkgYW5kIHdvdWxkIGJlIGEgdmFsaWQgRWQyNTUxOSBzaWduYXR1cmUgaW4gcHJvZHVjdGlvbg=="
+  },
+  "keystroke": {
+    "session_id": "ks-2026-01-25-090000-alice",
+    "started_at": "2026-01-25T09:00:00Z",
+    "ended_at": "2026-01-25T14:20:00Z",
+    "duration": 19200000000000,
+    "total_keystrokes": 18542,
+    "total_samples": 1854,
+    "keystrokes_per_minute": 57.9,
+    "unique_document_states": 847,
+    "chain_valid": true,
+    "plausible_human_rate": true,
+    "samples": [
+      {
+        "n": 0,
+        "t": "2026-01-25T09:00:12Z",
+        "h": "1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b",
+        "z": "idle->active",
+        "b": 45,
+        "j": 1250,
+        "s": "f1e2d3c4b5a6978869574635241302f1e2d3c4b5a6978869574635241302f1e2"
+      },
+      {
+        "n": 1,
+        "t": "2026-01-25T09:00:12Z",
+        "h": "1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b",
+        "z": "active",
+        "b": 52,
+        "j": -890,
+        "s": "e2d3c4b5a6978869574635241302f1e2d3c4b5a6978869574635241302f1e2d3"
+      },
+      {
+        "n": 2,
+        "t": "2026-01-25T09:00:13Z",
+        "h": "1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b",
+        "z": "active",
+        "b": 48,
+        "j": 2100,
+        "s": "d3c4b5a6978869574635241302f1e2d3c4b5a6978869574635241302f1e2d3c4"
+      }
+    ]
+  },
+  "contexts": [
+    {
+      "type": "external",
+      "note": "Imported Q4 financial data from company ERP system",
+      "start_time": "2026-01-25T10:30:00Z",
+      "end_time": "2026-01-25T10:35:00Z"
+    },
+    {
+      "type": "review",
+      "note": "Final proofreading pass",
+      "start_time": "2026-01-25T14:00:00Z",
+      "end_time": "2026-01-25T14:20:00Z"
+    }
+  ],
+  "external": {
+    "opentimestamps": [
+      {
+        "chain_hash": "3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b",
+        "proof": "AE9wZW5UaW1lc3RhbXBzIHByb29mIGRhdGEgd291bGQgYmUgaGVyZSBpbiBhIHJlYWwgZXZpZGVuY2UgcGFja2V0",
+        "status": "pending"
+      }
+    ]
+  },
+  "claims": [
+    {
+      "type": "chain_integrity",
+      "description": "Content states form an unbroken cryptographic chain",
+      "confidence": "cryptographic"
+    },
+    {
+      "type": "time_elapsed",
+      "description": "At least 5h 20m 0s elapsed during documented composition",
+      "confidence": "cryptographic"
+    },
+    {
+      "type": "process_declared",
+      "description": "Author signed declaration of creative process. No AI tools declared",
+      "confidence": "attestation"
+    },
+    {
+      "type": "keystrokes_verified",
+      "description": "18542 keystrokes recorded over 5h 20m (58/min), consistent with human typing",
+      "confidence": "cryptographic"
+    },
+    {
+      "type": "contexts_recorded",
+      "description": "2 context periods recorded (1 external)",
+      "confidence": "attestation"
+    },
+    {
+      "type": "external_anchored",
+      "description": "Chain anchored to 1 external timestamp authorities",
+      "confidence": "cryptographic"
+    }
+  ],
+  "limitations": [
+    "Cannot prove cognitive origin of ideas",
+    "Cannot prove absence of AI involvement in ideation",
+    "No presence verification - cannot confirm human was at keyboard",
+    "No hardware attestation - software-only security"
+  ]
+}

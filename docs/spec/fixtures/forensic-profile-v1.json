@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "file_path": "/tmp/example.txt",
+  "event_count": 0,
+  "time_span_seconds": 0,
+  "metrics": {
+    "monotonic_append_ratio": 0,
+    "edit_entropy": 0,
+    "median_interval_seconds": 0,
+    "positive_negative_ratio": 0,
+    "deletion_clustering": 0
+  },
+  "assessment": "INSUFFICIENT DATA"
+}

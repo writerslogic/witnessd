@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "timestamp": "2026-01-26T00:00:00Z",
+  "file_path": "/tmp/example.txt",
+  "file_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "file_size": 123,
+  "mmr_index": 0,
+  "mmr_size": 1,
+  "mmr_root": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "merkle_path": [],
+  "peaks": [
+    "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+  ],
+  "peak_position": 0,
+  "public_key": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+  "signature": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+}
