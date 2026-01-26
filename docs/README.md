@@ -39,7 +39,7 @@ state over time. Unlike traditional version control, witnessd focuses on
 
 ```bash
 # From source
-git clone https://github.com/davidcondrey/witnessd.git
+git clone https://github.com/writerslogic/witnessd.git
 cd witnessd
 make build
 sudo make install
@@ -118,6 +118,14 @@ Schemas for validating witnessd output:
 
 - [schema/witness-proof-v1.schema.json](schema/witness-proof-v1.schema.json) — Evidence packet validation
 - [schema/forensic-profile-v1.schema.json](schema/forensic-profile-v1.schema.json) — Forensic analysis validation
+- [schema/attestation-v1.schema.json](schema/attestation-v1.schema.json) — TPM attestation template validation
+
+### Spec Fixtures
+
+Minimal, schema-valid examples used for compatibility testing:
+
+- [spec/fixtures/witness-proof-v1.json](spec/fixtures/witness-proof-v1.json)
+- [spec/fixtures/forensic-profile-v1.json](spec/fixtures/forensic-profile-v1.json)
 
 ### General
 

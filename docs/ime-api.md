@@ -1,13 +1,18 @@
 # Witnessd IME API Documentation
 
 This document describes the Input Method Engine (IME) API for integrating
-witnessd cryptographic authorship witnessing into keyboard input systems.
+witnessd cryptographic authorship witnessing into desktop keyboard input systems.
 
 ## Overview
 
 The IME package provides a cross-platform engine for recording keystroke
 patterns and generating cryptographic evidence of authorship. The engine
 operates in pass-through mode: it observes typing without modifying input.
+
+**Supported Platforms:**
+- macOS (Input Method Kit)
+- Linux (IBus)
+- Windows (Text Services Framework)
 
 ## Core Components
 
@@ -94,61 +99,6 @@ for _, sample := range evidence.Samples {
 }
 ```
 
-## Mobile API
-
-For Android (via gomobile) and iOS, use the `MobileEngine` wrapper.
-
-```go
-// Go side
-mobile := ime.NewMobileEngine()
-mobile.StartSession(appID, docID, context)
-
-// Process keys (returns jitter delay in microseconds)
-delayMicros, err := mobile.OnKeyDown(charCode)
-
-// With zone
-delayMicros, err := mobile.OnKeyDownWithZone(zone, charCode)
-
-// With touch position
-delayMicros, err := mobile.OnKeyDownWithPosition(x, y, charCode)
-
-// Get JSON-encoded evidence
-evidenceJSON, err := mobile.EndSession()
-```
-
-### Android (Kotlin)
-
-```kotlin
-import ime.Ime
-import ime.MobileEngine
-
-val engine = Ime.newMobileEngine()
-engine.startSession(packageName, fieldId, "")
-
-// In onKey handler
-val delay = engine.onKeyDown(primaryCode.toLong())
-// Apply delay...
-engine.onTextCommit(char.toString())
-
-val evidence = engine.endSession()
-```
-
-### iOS (Swift)
-
-```swift
-import Witnessd
-
-let engine = ImeNewMobileEngine()
-try engine?.startSession(bundleID, docID: docID, context: "")
-
-// In key handler
-let delay = try engine?.onKeyDown(Int32(char.asciiValue!))
-// Apply delay...
-try engine?.onTextCommit(String(char))
-
-let evidence = try engine?.endSession()
-```
-
 ## Platform Integration
 
 ### macOS (Input Method Kit)
@@ -217,6 +167,12 @@ sessions, err := storage.List(since, until)
 // Prune old records
 pruned, err := storage.Prune(30 * 24 * time.Hour)  // 30 days
 ```
+
+### Platform defaults
+
+Evidence is stored in platform-specific locations:
+- **macOS/Linux**: `~/.witnessd/evidence/`
+- **Windows**: `%APPDATA%\witnessd\evidence\`
 
 ## Keyboard Zones
 
