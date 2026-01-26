@@ -1,0 +1,11 @@
+# Ignore downloaded datasets (large files)
+raw/
+processed/
+analysis/
+
+# Keep external references and documentation
+!external/
+
+# Keep the download script
+!download-datasets.sh
+!README.md
