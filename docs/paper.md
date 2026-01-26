@@ -2,7 +2,7 @@
 
 ## Abstract
 
-We present **witnessd**, a system for generating irrefutable cryptographic evidence of document authorship through continuous temporal witnessing. By capturing the "kinetic signature" of human creative work—the natural rhythm of edits, pauses, and revisions—we construct proofs that are infeasible to forge retroactively. The system employs a Merkle Mountain Range (MMR) for efficient append-only state tracking, Ed25519 signatures for identity binding, external trust anchors (OpenTimestamps, RFC 3161) for immutable timestamps, and forensic behavioral analysis for authorship verification.
+We present **witnessd**, a system for generating tamper-evident cryptographic records of document authorship through continuous temporal witnessing. By capturing the "kinetic signature" of human creative work—the natural rhythm of edits, pauses, and revisions—we construct proofs that are infeasible to forge retroactively. The system employs a Merkle Mountain Range (MMR) for efficient append-only state tracking, Ed25519 signatures for identity binding, external trust anchors (OpenTimestamps, RFC 3161) for immutable timestamps, and forensic behavioral analysis for authorship verification.
 
 ## 1. Introduction
 
@@ -299,7 +299,7 @@ We submit MMR roots to Bitcoin calendar servers:
 ### 6.2 RFC 3161
 
 Traditional Time-Stamp Authority compliance:
-- Compatible with legal frameworks (FRE 902(13), eIDAS 2.0)
+- Implements EU Trusted List parsing and validation according to ETSI EN 319 612
 - Signed by trusted third parties
 - Supports multiple TSA servers
 
@@ -390,7 +390,7 @@ This approach sidesteps the detection arms race by:
 
 witnessd provides a practical solution for proving human authorship through cryptographic process witnessing. By capturing the natural rhythm of creative work, we produce evidence that is:
 
-1. **Irrefutable**: Cryptographically bound to identity and time
+1. **Tamper-evident**: Cryptographically bound to identity and time
 2. **Forensic**: Statistical analysis reveals authorship patterns
 3. **Portable**: Self-contained evidence packets
 4. **Verifiable**: Anyone can check proofs

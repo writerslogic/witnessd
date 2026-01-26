@@ -1,7 +1,7 @@
 # witnessd
 
 **Kinetic Proof of Provenance** — A cryptographic file witnessing daemon that
-creates irrefutable evidence of file authorship and modification history.
+creates tamper-evident records of file authorship and modification history.
 
 ## Overview
 
@@ -9,10 +9,10 @@ witnessd continuously monitors files and creates cryptographic proofs of their
 state over time. Unlike traditional version control, witnessd focuses on
 **proving when and how content was created**, enabling:
 
-- **Legal Evidence:** Court-admissible proof of document authenticity (FRE 902(13))
+- **Legal Evidence:** Admissible, burden-shifting evidence under FRE 902(13) and equivalent rules
 - **Authorship Verification:** Detect AI-generated vs human-authored content
 - **Tamper Detection:** Cryptographically verify historical file states
-- **Compliance:** Meet eIDAS 2.0 requirements for qualified electronic signatures
+- **Compliance:** Implements EU Trusted List parsing and validation according to ETSI EN 319 612
 
 ## Key Features
 
@@ -133,6 +133,15 @@ Minimal, schema-valid examples used for compatibility testing:
 - [PRIVACY.md](../PRIVACY.md) — Privacy policy and data handling
 - [CONTRIBUTING.md](../CONTRIBUTING.md) — Contribution guidelines
 
+### Provenance and Process Integrity
+
+- [PROVENANCE.md](PROVENANCE.md) — Record provenance, device identification, access control, chain of custody
+- [PROCESS-INTEGRITY.md](PROCESS-INTEGRITY.md) — What the system does/doesn't do, failure modes, update policy, verification steps
+
+### Independent Verification
+
+- [INDEPENDENT-VERIFICATION.md](INDEPENDENT-VERIFICATION.md) — Third-party verification without witnessd software
+
 ### Versioning
 
 The specification and implementation are versioned independently:
@@ -150,7 +159,7 @@ This separation ensures:
 ## Use Cases
 
 ### Legal Discovery
-Generate court-admissible evidence packets proving document authenticity:
+Generate self-authenticating evidence packets (FRE 902(13)):
 ```bash
 witnessctl export --format=legal document.pdf > evidence.json
 ```
@@ -170,7 +179,7 @@ witnessctl export --anchor=ots invention.md
 ### Compliance
 Meet regulatory requirements for document authenticity:
 ```bash
-witnessctl verify --policy=eidas contract.pdf
+witnessctl verify --anchor=rfc3161 contract.pdf
 ```
 
 ## Comparison
