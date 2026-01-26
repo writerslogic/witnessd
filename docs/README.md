@@ -142,6 +142,10 @@ Minimal, schema-valid examples used for compatibility testing:
 
 - [INDEPENDENT-VERIFICATION.md](INDEPENDENT-VERIFICATION.md) — Third-party verification without witnessd software
 
+### Evidence Architecture
+
+- [EVIDENCE-ARCHITECTURE.md](EVIDENCE-ARCHITECTURE.md) — Forensic evidence specification forcing binary forks
+
 ### Versioning
 
 The specification and implementation are versioned independently:
