@@ -1,0 +1,21 @@
+%FDF-1.2
+1 0 obj
+<<
+/FDF << /Fields [
+<< /T (Application Number or Control Number if applicable) /V () >>
+<< /T (Patent Number if applicable) /V () >>
+<< /T (First Named Inventor) /V (David Condrey) >>
+<< /T (Title of Invention) /V (System and Method for Falsifiable Process Evidence via Cryptographic Causality Locks and Behavioral Attestation) >>
+<< /T (Signature) /V (David Condrey) >>
+<< /T (Name) /V (David Condrey) >>
+<< /T (Date) /V (2026-01-27) >>
+<< /T (Telephone) /V () >>
+<< /T (Registration No) /V () >>
+] >>
+>>
+endobj
+trailer
+<<
+/Root 1 0 R
+>>
+%%EOF

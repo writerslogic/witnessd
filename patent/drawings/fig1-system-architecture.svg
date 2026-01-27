@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="600" viewBox="0 0 900 600">
+  <style>
+    .box { fill: none; stroke: #000; stroke-width: 2; }
+    .label { font-family: Arial, sans-serif; font-size: 16px; }
+    .small { font-family: Arial, sans-serif; font-size: 13px; }
+    .arrow { stroke: #000; stroke-width: 2; marker-end: url(#arrow); }
+  </style>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#000" />
+    </marker>
+  </defs>
+
+  <text x="20" y="28" class="label">Figure 1: System Architecture</text>
+
+  <rect x="40" y="70" width="250" height="90" class="box" />
+  <text x="60" y="105" class="label">User Applications</text>
+  <text x="60" y="130" class="small">Editor / IDE / Browser</text>
+
+  <rect x="325" y="60" width="260" height="110" class="box" />
+  <text x="345" y="95" class="label">witnessd Daemon</text>
+  <text x="345" y="120" class="small">Capture + commit + attest</text>
+  <text x="345" y="140" class="small">CED + key lifecycle</text>
+
+  <rect x="620" y="60" width="240" height="110" class="box" />
+  <text x="640" y="95" class="label">File System</text>
+  <text x="640" y="120" class="small">Artifacts / Documents</text>
+
+  <line x1="290" y1="115" x2="325" y2="115" class="arrow" />
+  <line x1="585" y1="115" x2="620" y2="115" class="arrow" />
+
+  <rect x="60" y="220" width="320" height="150" class="box" />
+  <text x="85" y="250" class="label">Secure Storage</text>
+  <text x="85" y="275" class="small">Volatile buffer + WAL</text>
+  <text x="85" y="295" class="small">MMR append-only log</text>
+  <text x="85" y="315" class="small">CED bound to leaves</text>
+  <text x="85" y="335" class="small">Session key ratchet</text>
+
+  <rect x="420" y="210" width="420" height="170" class="box" />
+  <text x="445" y="245" class="label">Evidence Layers</text>
+  <text x="445" y="270" class="small">VDF time-lock proofs</text>
+  <text x="445" y="290" class="small">Jitter/behavior binding</text>
+  <text x="445" y="310" class="small">PUF/TPM attestation</text>
+  <text x="445" y="330" class="small">Process declaration</text>
+  <text x="445" y="350" class="small">Evidence packet export</text>
+
+  <line x1="455" y1="170" x2="200" y2="220" class="arrow" />
+  <line x1="520" y1="170" x2="640" y2="210" class="arrow" />
+
+  <rect x="520" y="410" width="320" height="90" class="box" />
+  <text x="545" y="445" class="label">External Anchors (opt.)</text>
+  <text x="545" y="470" class="small">Public ledger / TSA</text>
+
+  <line x1="640" y1="380" x2="660" y2="410" class="arrow" />
+
+  <rect x="80" y="430" width="260" height="80" class="box" />
+  <text x="105" y="465" class="label">witnessctl / Verifier</text>
+  <text x="105" y="490" class="small">Verify + transcript</text>
+
+  <line x1="220" y1="370" x2="200" y2="430" class="arrow" />
+  <line x1="520" y1="380" x2="340" y2="430" class="arrow" />
+</svg>

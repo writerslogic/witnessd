@@ -199,7 +199,9 @@ witnessctl verify --anchor=rfc3161 contract.pdf
 
 ## License
 
-Apache License 2.0. See [LICENSE](../LICENSE).
+Dual License: Non-commercial use free; commercial license required for business use.
+Patent Pending: USPTO Application No. 19/460,364.
+See [LICENSE](../LICENSE) for complete terms.
 
 ## Acknowledgments
 
