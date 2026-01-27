@@ -518,7 +518,7 @@ func BenchmarkPacketSize(b *testing.B) {
 			decl := createBenchDeclaration()
 
 			jitterParams := jitter.DefaultParameters()
-			jitterParams.SampleInterval = scale.keystrokes / 10
+			jitterParams.SampleInterval = uint64(scale.keystrokes / 10)
 
 			jitterSession, _ := jitter.NewSession(documentPath, jitterParams)
 			for j := 0; j < scale.keystrokes; j++ {
