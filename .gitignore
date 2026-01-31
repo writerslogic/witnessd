@@ -1,0 +1,38 @@
+# macOS
+.DS_Store
+*.swp
+
+# Rust
+/target/
+**/target/
+**/*.rs.bk
+Cargo.lock
+!rust/witnessd-core/Cargo.lock
+!rust/witnessd-cli/Cargo.lock
+
+# Flutter
+witnessd-gui/.dart_tool/
+witnessd-gui/.packages
+witnessd-gui/build/
+witnessd-gui/.flutter-plugins
+witnessd-gui/.flutter-plugins-dependencies
+witnessd-gui/pubspec.lock
+witnessd-gui/*.iml
+witnessd-gui/.idea/
+
+# IDE
+.vscode/
+.idea/
+*.sublime-*
+
+# Test artifacts
+*.evidence.json
+
+# Build artifacts
+*.dmg
+*.msi
+*.exe
+*.app/
+
+# Claude
+.claude/
