@@ -97,3 +97,7 @@ paper/
 *.tgz
 *.deb
 *.rpm
+
+# Build artifacts
+Witnessd-*.dmg
+witnessd-gui
