@@ -27,11 +27,13 @@
 
 # Xcode / SwiftUI
 DerivedData/
+build/
 *.xcuserstate
 *.xcuserdata/
 *.xcworkspace/xcuserdata/
 *.xcodeproj/xcuserdata/
 *.ipa
+XCBuildData/
 
 # Apple signing / notarization
 *.p8
