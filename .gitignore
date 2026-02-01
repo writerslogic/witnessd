@@ -1,15 +1,22 @@
 ###############################################################################
-# Build artifacts (never commit binaries)
+# Build artifacts
 ###############################################################################
 /bin/
-/target/
 /dist/
 *.exe
 *.dll
 *.so
 *.dylib
 
-# Go build outputs
+# Rust
+/target/
+**/target/
+**/*.rs.bk
+Cargo.lock
+!rust/witnessd-core/Cargo.lock
+!rust/witnessd-cli/Cargo.lock
+
+# Go (legacy branch)
 /witnessd
 /witnessctl
 /witnessd-entropy
@@ -43,6 +50,20 @@ XCBuildData/
 witnessd-notarize.zip
 
 ###############################################################################
+# Flutter
+###############################################################################
+witnessd-gui/.dart_tool/
+witnessd-gui/.packages
+witnessd-gui/build/
+witnessd-gui/.flutter-plugins
+witnessd-gui/.flutter-plugins-dependencies
+witnessd-gui/pubspec.lock
+witnessd-gui/*.iml
+witnessd-gui/.idea/
+platforms/windows/flutter/build/
+platforms/windows/flutter/.dart_tool/
+
+###############################################################################
 # IDEs / editors
 ###############################################################################
 .idea/
@@ -51,14 +72,7 @@ witnessd-notarize.zip
 *.swo
 *.bak
 *.tmp
-
-###############################################################################
-# IME / platform build artifacts
-###############################################################################
-cmd/witnessd-ime/build/
-cmd/witnessd-ime/Witnessd.app/
-cmd/witnessd-ime/libwitnessd.a
-cmd/witnessd-ime/libwitnessd.h
+*.sublime-*
 
 ###############################################################################
 # Coverage / testing artifacts
@@ -66,6 +80,7 @@ cmd/witnessd-ime/libwitnessd.h
 coverage.out
 coverage.html
 ca_coverage.out
+*.evidence.json
 
 ###############################################################################
 # Research data (NOT for public repo)
@@ -73,14 +88,8 @@ ca_coverage.out
 data/raw/
 data/processed/
 data/external/
-
-# Allow scripts + README
 !data/download-datasets.sh
 !data/README.md
-
-###############################################################################
-# Paper directory (private research, not for public repo)
-###############################################################################
 paper/
 
 ###############################################################################
@@ -99,7 +108,11 @@ paper/
 *.tgz
 *.deb
 *.rpm
+*.dmg
+*.msi
+*.app/
 
-# Build artifacts
-Witnessd-*.dmg
-witnessd-gui
+###############################################################################
+# Claude
+###############################################################################
+.claude/

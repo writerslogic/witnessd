@@ -4,7 +4,7 @@ This document describes witnessd's compliance with [SLSA](https://slsa.dev/) (Su
 
 ## Current Status: SLSA Level 3
 
-Witnessd meets **SLSA Level 3** requirements for all released artifacts.
+Witnessd-rust meets **SLSA Level 3** requirements for all released artifacts.
 
 ## Requirements Met
 
@@ -18,7 +18,7 @@ Witnessd meets **SLSA Level 3** requirements for all released artifacts.
 | **Ephemeral environment** | Yes | Fresh GitHub Actions runners per build |
 | **Isolated build** | Yes | GitHub Actions provides container isolation |
 | **Parameterless build** | Yes | Builds triggered only by git tags |
-| **Hermetic build** | Yes | Locked dependencies (`go.mod`, `go.sum`) |
+| **Hermetic build** | Yes | Locked dependencies (`Cargo.lock`, `pubspec.lock`) |
 | **Reproducible build** | Verified | CI includes reproducibility checks |
 
 ### Source Level 3
@@ -44,9 +44,8 @@ Witnessd meets **SLSA Level 3** requirements for all released artifacts.
 
 All release artifacts include SLSA provenance:
 
-- **Binaries**: `witnessd`, `witnessctl` (Linux, macOS, Windows)
-- **Packages**: `.deb`, `.rpm`, `.msi`, `.dmg`, AppImage
-- **Container images**: `ghcr.io/writerslogic/witnessd`
+- **Rust binaries**: `witnessd-cli` (Linux, macOS, Windows)
+- **Flutter apps**: macOS `.app`, Windows MSIX (planned)
 - **Source archives**: `.tar.gz`, `.zip`
 
 ## Verification
@@ -59,32 +58,24 @@ go install github.com/slsa-framework/slsa-verifier/v2/cli/slsa-verifier@latest
 
 # Download release artifacts
 VERSION="v1.0.0"
-curl -LO "https://github.com/writerslogic/witnessd/releases/download/${VERSION}/witnessd_${VERSION#v}_linux_amd64.tar.gz"
+curl -LO "https://github.com/writerslogic/witnessd/releases/download/${VERSION}/witnessd_${VERSION}_x86_64-unknown-linux-gnu.tar.gz"
 curl -LO "https://github.com/writerslogic/witnessd/releases/download/${VERSION}/multiple.intoto.jsonl"
 
 # Verify provenance
-slsa-verifier verify-artifact witnessd_${VERSION#v}_linux_amd64.tar.gz \
+slsa-verifier verify-artifact witnessd_${VERSION}_x86_64-unknown-linux-gnu.tar.gz \
   --provenance-path multiple.intoto.jsonl \
   --source-uri github.com/writerslogic/witnessd \
   --source-tag "${VERSION}"
 ```
 
-### Verify Container Image
+### Verify Checksums
 
 ```bash
-# Install cosign
-go install github.com/sigstore/cosign/v2/cmd/cosign@latest
+# Download checksums
+curl -LO "https://github.com/writerslogic/witnessd/releases/download/${VERSION}/checksums.txt"
 
-# Verify container signature
-cosign verify ghcr.io/writerslogic/witnessd:latest \
-  --certificate-identity-regexp="https://github.com/writerslogic/witnessd/.*" \
-  --certificate-oidc-issuer="https://token.actions.githubusercontent.com"
-
-# Verify SBOM attestation
-cosign verify-attestation ghcr.io/writerslogic/witnessd:latest \
-  --type spdxjson \
-  --certificate-identity-regexp="https://github.com/writerslogic/witnessd/.*" \
-  --certificate-oidc-issuer="https://token.actions.githubusercontent.com"
+# Verify
+sha256sum -c checksums.txt
 ```
 
 ## SBOM (Software Bill of Materials)
@@ -107,7 +98,7 @@ Example provenance structure:
   "_type": "https://in-toto.io/Statement/v1",
   "subject": [
     {
-      "name": "witnessd_1.0.0_linux_amd64.tar.gz",
+      "name": "witnessd_v1.0.0_x86_64-unknown-linux-gnu.tar.gz",
       "digest": {
         "sha256": "abc123..."
       }
@@ -139,20 +130,37 @@ All releases undergo automated security scanning:
 
 | Scanner | Purpose |
 |---------|---------|
-| **gosec** | Go security issues |
-| **CodeQL** | Static analysis |
+| **cargo-audit** | Rust dependency advisories |
+| **cargo-deny** | License and ban checking |
 | **Trivy** | Vulnerability scanning |
-| **govulncheck** | Go module vulnerabilities |
-| **cargo-audit** | Dependency advisories |
+| **Semgrep** | Static analysis |
 | **Gitleaks** | Secret detection |
+| **TruffleHog** | Secret scanning |
+
+## Dependency Management
+
+### Rust Dependencies
+
+- All dependencies locked via `Cargo.lock`
+- Vendored dependencies in `rust/witnessd-core/vendor/`
+- `deny.toml` configured for:
+  - Security advisory checking
+  - License allowlist (MIT, Apache-2.0, BSD, ISC, CC0)
+  - Multiple version warnings
+
+### Flutter Dependencies
+
+- All dependencies locked via `pubspec.lock`
+- Pub cache for reproducibility
 
 ## Continuous Improvement
 
 We are working toward:
 
-1. **Full SLSA Level 4**: Hardware-backed signing, hermetic verification
-2. **Per-dependency provenance**: Track SLSA status of all dependencies
-3. **Reproducible builds**: Bit-for-bit identical builds across environments
+1. **Container images**: Add Docker builds with Cosign signing
+2. **Full SLSA Level 4**: Hardware-backed signing
+3. **Per-dependency provenance**: Track SLSA status of all Rust crates
+4. **Reproducible builds**: Bit-for-bit identical builds
 
 ## References
 
@@ -160,3 +168,5 @@ We are working toward:
 - [slsa-github-generator](https://github.com/slsa-framework/slsa-github-generator)
 - [Sigstore](https://www.sigstore.dev/)
 - [in-toto Attestation Framework](https://in-toto.io/)
+- [cargo-audit](https://github.com/RustSec/rustsec/tree/main/cargo-audit)
+- [cargo-deny](https://github.com/EmbarkStudios/cargo-deny)
