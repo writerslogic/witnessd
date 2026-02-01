@@ -8,11 +8,11 @@ use chrono::Utc;
 use sha2::{Digest as Sha2Digest, Sha256};
 use std::sync::Mutex;
 use tss_esapi::attributes::{NvIndexAttributes, ObjectAttributesBuilder};
-use tss_esapi::handles::{AuthHandle, KeyHandle, NvIndexTpmHandle, TpmHandle};
+use tss_esapi::handles::{KeyHandle, NvIndexHandle, NvIndexTpmHandle};
 use tss_esapi::interface_types::algorithm::{
     HashingAlgorithm, PublicAlgorithm, RsaSchemeAlgorithm, SignatureSchemeAlgorithm,
 };
-use tss_esapi::interface_types::resource_handles::Hierarchy;
+use tss_esapi::interface_types::resource_handles::{Hierarchy, Provision};
 use tss_esapi::interface_types::session_handles::PolicySession;
 use tss_esapi::structures::{
     Auth, Data, Digest as TssDigest, DigestList, EccScheme, NvPublicBuilder, PcrSelectionList,
@@ -440,9 +440,8 @@ fn read_pcrs(state: &mut LinuxState, pcrs: &[u32]) -> Result<Vec<PcrValue>, TPME
 
 fn init_counter(state: &mut LinuxState) -> Result<(), TPMError> {
     let nv_index = NvIndexTpmHandle::new(NV_COUNTER_INDEX).map_err(|_| TPMError::CounterNotInit)?;
-    let handle = TpmHandle::NvIndex(nv_index);
 
-    if state.context.nv_read_public(handle).is_ok() {
+    if state.context.nv_read_public(nv_index).is_ok() {
         state.counter_init = true;
         return Ok(());
     }
@@ -455,8 +454,8 @@ fn init_counter(state: &mut LinuxState) -> Result<(), TPMError> {
         .map_err(|_| TPMError::CounterNotInit)?;
 
     let public = NvPublicBuilder::new()
-        .with_nv_index(handle)
-        .with_name_hashing_algorithm(HashingAlgorithm::Sha256)
+        .with_nv_index(nv_index)
+        .with_index_name_algorithm(HashingAlgorithm::Sha256)
         .with_attributes(attributes)
         .with_data_size(NV_COUNTER_SIZE)
         .build()
@@ -464,7 +463,7 @@ fn init_counter(state: &mut LinuxState) -> Result<(), TPMError> {
 
     state
         .context
-        .nv_define_space(AuthHandle::Owner, Auth::default(), public)
+        .nv_define_space(Provision::Owner, Some(Auth::default()), public)
         .map_err(|_| TPMError::CounterNotInit)?;
 
     state.counter_init = true;
@@ -473,10 +472,10 @@ fn init_counter(state: &mut LinuxState) -> Result<(), TPMError> {
 
 fn read_counter(state: &mut LinuxState) -> Result<u64, TPMError> {
     let nv_index = NvIndexTpmHandle::new(NV_COUNTER_INDEX).map_err(|_| TPMError::CounterNotInit)?;
-    let handle = TpmHandle::NvIndex(nv_index);
+    let nv_handle: NvIndexHandle = nv_index.into();
     let data = state
         .context
-        .nv_read(AuthHandle::NvIndex(handle), handle, NV_COUNTER_SIZE, 0)
+        .nv_read(nv_handle, nv_handle, NV_COUNTER_SIZE, 0)
         .map_err(|_| TPMError::CounterNotInit)?;
 
     let bytes = data.value();
@@ -494,10 +493,10 @@ fn increment_counter(state: &mut LinuxState) -> Result<u64, TPMError> {
     }
 
     let nv_index = NvIndexTpmHandle::new(NV_COUNTER_INDEX).map_err(|_| TPMError::CounterNotInit)?;
-    let handle = TpmHandle::NvIndex(nv_index);
+    let nv_handle: NvIndexHandle = nv_index.into();
     state
         .context
-        .nv_increment(AuthHandle::NvIndex(handle), handle)
+        .nv_increment(nv_handle, nv_handle)
         .map_err(|_| TPMError::CounterNotInit)?;
     read_counter(state)
 }
