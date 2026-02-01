@@ -918,9 +918,8 @@ pub mod macos {
         #[test]
         fn test_permission_check() {
             // This will return false in CI environments without permissions
-            let status = get_permission_status();
             // Just verify it doesn't panic
-            assert!(status.accessibility || !status.accessibility);
+            let _ = get_permission_status();
         }
 
         #[test]
