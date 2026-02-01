@@ -973,7 +973,7 @@ pub mod windows {
     pub fn get_active_focus() -> Result<FocusInfo> {
         unsafe {
             let hwnd = GetForegroundWindow();
-            if hwnd.0 == 0 {
+            if hwnd.0.is_null() {
                 return Err(anyhow!("No active window"));
             }
 
