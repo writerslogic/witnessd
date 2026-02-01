@@ -20,8 +20,8 @@ use tss_esapi::interface_types::resource_handles::{Hierarchy, NvAuth, Provision}
 use tss_esapi::interface_types::session_handles::{AuthSession, PolicySession};
 use tss_esapi::structures::{
     Auth, CreatePrimaryKeyResult, Data, Digest as TssDigest, EccPoint, EccScheme, HashScheme,
-    KeyedHashScheme, NvPublicBuilder, PcrSelectionList, PcrSlot, Private, Public, PublicBuilder,
-    PublicEccParametersBuilder, PublicKeyRsa, PublicKeyedHashParameters,
+    HashcheckTicket, KeyedHashScheme, NvPublicBuilder, PcrSelectionList, PcrSlot, Private, Public,
+    PublicBuilder, PublicEccParametersBuilder, PublicKeyRsa, PublicKeyedHashParameters,
     PublicRsaParametersBuilder, RsaExponent, RsaScheme, SensitiveData, SignatureScheme,
     SymmetricDefinition, SymmetricDefinitionObject,
 };
@@ -167,7 +167,7 @@ impl Provider for LinuxTpmProvider {
                 SignatureScheme::RsaSsa {
                     hash_scheme: HashScheme::new(HashingAlgorithm::Sha256),
                 },
-                None,
+                HashcheckTicket::default(),
             )
             .map_err(|_| TPMError::Signing("sign failed".into()))?
             .marshall()
