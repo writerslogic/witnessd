@@ -9,19 +9,17 @@ use sha2::{Digest as Sha2Digest, Sha256};
 use std::sync::Mutex;
 use tss_esapi::attributes::{NvIndexAttributes, ObjectAttributesBuilder};
 use tss_esapi::handles::{KeyHandle, NvIndexHandle, NvIndexTpmHandle};
-use tss_esapi::interface_types::algorithm::{
-    HashingAlgorithm, PublicAlgorithm, RsaSchemeAlgorithm, SignatureSchemeAlgorithm,
-};
+use tss_esapi::interface_types::algorithm::{HashingAlgorithm, PublicAlgorithm, RsaSchemeAlgorithm};
 use tss_esapi::interface_types::resource_handles::{Hierarchy, NvAuth, Provision};
 use tss_esapi::interface_types::session_handles::PolicySession;
 use tss_esapi::structures::{
-    Auth, Data, Digest as TssDigest, EccScheme, NvPublicBuilder, PcrSelectionList,
-    PcrSelectionListBuilder, PcrSlot, Public, PublicBuilder, PublicEccKey,
+    Auth, CreatePrimaryKeyResult, Data, Digest as TssDigest, EccScheme, HashScheme,
+    NvPublicBuilder, PcrSelectionList, PcrSlot, Private, Public, PublicBuilder, PublicEccKey,
     PublicEccParametersBuilder, PublicKeyRsa, PublicRsaParametersBuilder, RsaExponent, RsaScheme,
     SignatureScheme, SymmetricDefinition, SymmetricDefinitionObject,
 };
 use tss_esapi::tcti_ldr::TctiNameConf;
-use tss_esapi::traits::Marshall;
+use tss_esapi::traits::{Marshall, UnMarshall};
 use tss_esapi::Context;
 
 const NV_COUNTER_INDEX: u32 = 0x01500001;
@@ -105,8 +103,9 @@ impl Provider for LinuxTpmProvider {
             .quote(
                 ak_handle,
                 Data::try_from(qualifying).map_err(|_| TPMError::Quote("bad nonce".into()))?,
-                SignatureScheme::create(SignatureSchemeAlgorithm::RsaSsa, HashingAlgorithm::Sha256)
-                    .map_err(|_| TPMError::Quote("scheme".into()))?,
+                SignatureScheme::RsaSsa {
+                    hash_scheme: HashScheme::new(HashingAlgorithm::Sha256),
+                },
                 selection,
             )
             .map_err(|_| TPMError::Quote("quote failed".into()))?;
@@ -152,8 +151,9 @@ impl Provider for LinuxTpmProvider {
                 ak_handle,
                 TssDigest::try_from(digest.as_slice())
                     .map_err(|_| TPMError::Signing("digest".into()))?,
-                SignatureScheme::create(SignatureSchemeAlgorithm::RsaSsa, HashingAlgorithm::Sha256)
-                    .map_err(|_| TPMError::Signing("scheme".into()))?,
+                SignatureScheme::RsaSsa {
+                    hash_scheme: HashScheme::new(HashingAlgorithm::Sha256),
+                },
                 None,
             )
             .map_err(|_| TPMError::Signing("sign failed".into()))?
@@ -190,7 +190,7 @@ impl Provider for LinuxTpmProvider {
 
         let session = create_policy_session(&mut state, &pcrs)?;
 
-        let (private, public) = state
+        let result = state
             .context
             .create(
                 srk.key_handle,
@@ -201,10 +201,12 @@ impl Provider for LinuxTpmProvider {
             )
             .map_err(|_| TPMError::Sealing("create".into()))?;
 
-        let pub_bytes = public
+        let pub_bytes = result
+            .out_public
             .marshall()
             .map_err(|_| TPMError::Sealing("public".into()))?;
-        let priv_bytes = private
+        let priv_bytes = result
+            .out_private
             .marshall()
             .map_err(|_| TPMError::Sealing("private".into()))?;
 
@@ -245,8 +247,8 @@ impl Provider for LinuxTpmProvider {
 
         let public =
             Public::unmarshall(pub_bytes).map_err(|_| TPMError::Unsealing("public".into()))?;
-        let private = tss_esapi::structures::Private::unmarshall(priv_bytes)
-            .map_err(|_| TPMError::Unsealing("private".into()))?;
+        let private =
+            Private::unmarshall(priv_bytes).map_err(|_| TPMError::Unsealing("private".into()))?;
 
         let srk = create_srk(&mut state)?;
 
@@ -303,7 +305,7 @@ fn create_ak(state: &mut LinuxState) -> Result<(KeyHandle, Vec<u8>), TPMError> {
 
     let result = state
         .context
-        .create_primary(Hierarchy::Endorsement, public, None, None, None)
+        .create_primary(Hierarchy::Endorsement, public, None, None, None, None)
         .map_err(|_| TPMError::NotAvailable)?;
 
     let pub_bytes = result
@@ -314,9 +316,7 @@ fn create_ak(state: &mut LinuxState) -> Result<(KeyHandle, Vec<u8>), TPMError> {
     Ok((result.key_handle, pub_bytes))
 }
 
-fn create_srk(
-    state: &mut LinuxState,
-) -> Result<tss_esapi::handles::CreatePrimaryKeyResult, TPMError> {
+fn create_srk(state: &mut LinuxState) -> Result<CreatePrimaryKeyResult, TPMError> {
     let object_attributes = ObjectAttributesBuilder::new()
         .with_fixed_tpm(true)
         .with_fixed_parent(true)
@@ -329,8 +329,8 @@ fn create_srk(
 
     let ecc_params = PublicEccParametersBuilder::new()
         .with_symmetric(SymmetricDefinitionObject::Null)
-        .with_scheme(EccScheme::Null)
-        .with_curve_id(tss_esapi::interface_types::ecc::EccCurve::NistP256)
+        .with_ecc_scheme(EccScheme::Null)
+        .with_curve(tss_esapi::interface_types::ecc::EccCurve::NistP256)
         .build()
         .map_err(|_| TPMError::Sealing("ecc params".into()))?;
 
@@ -345,7 +345,7 @@ fn create_srk(
 
     state
         .context
-        .create_primary(Hierarchy::Owner, public, None, None, None)
+        .create_primary(Hierarchy::Owner, public, None, None, None, None)
         .map_err(|_| TPMError::Sealing("create primary".into()))
 }
 
@@ -366,7 +366,7 @@ fn get_device_id(state: &mut LinuxState) -> Result<Vec<u8>, TPMError> {
         )
         .with_rsa_parameters(
             PublicRsaParametersBuilder::new()
-                .with_symmetric(SymmetricDefinitionObject::Aes128Cfb)
+                .with_symmetric(SymmetricDefinitionObject::AES_128_CFB)
                 .with_scheme(
                     RsaScheme::create(RsaSchemeAlgorithm::Null, None)
                         .map_err(|_| TPMError::NotAvailable)?,
@@ -382,7 +382,7 @@ fn get_device_id(state: &mut LinuxState) -> Result<Vec<u8>, TPMError> {
 
     let result = state
         .context
-        .create_primary(Hierarchy::Endorsement, public, None, None, None)
+        .create_primary(Hierarchy::Endorsement, public, None, None, None, None)
         .map_err(|_| TPMError::NotAvailable)?;
 
     let pub_bytes = result
@@ -399,18 +399,13 @@ fn get_device_id(state: &mut LinuxState) -> Result<Vec<u8>, TPMError> {
 fn build_pcr_selection(pcrs: &[u32]) -> Result<PcrSelectionList, TPMError> {
     let mut selection = vec![];
     for pcr in pcrs {
-        selection.push(PcrSlot::try_from(*pcr as u8).map_err(|_| TPMError::NotAvailable)?);
+        selection.push(PcrSlot::try_from(*pcr).map_err(|_| TPMError::NotAvailable)?);
     }
-    let list = tss_esapi::structures::PcrSelection::create(HashingAlgorithm::Sha256, selection)
-        .map_err(|_| TPMError::NotAvailable)?;
 
-    let list = PcrSelectionListBuilder::new()
-        .with_selection(
-            PcrSelectionList::from_selections(vec![list]).map_err(|_| TPMError::NotAvailable)?,
-        )
-        .build();
-
-    Ok(list)
+    PcrSelectionList::builder()
+        .with_selection(HashingAlgorithm::Sha256, &selection)
+        .build()
+        .map_err(|_| TPMError::NotAvailable)
 }
 
 fn read_pcrs(state: &mut LinuxState, pcrs: &[u32]) -> Result<Vec<PcrValue>, TPMError> {
@@ -425,7 +420,7 @@ fn read_pcrs(state: &mut LinuxState, pcrs: &[u32]) -> Result<Vec<PcrValue>, TPME
         if let Some(digest) = digests.value().get(idx) {
             values.push(PcrValue {
                 index: *pcr,
-                value: digest.as_bytes().to_vec(),
+                value: digest.value().to_vec(),
             });
         }
     }
@@ -507,7 +502,7 @@ fn create_policy_session(
             None,
             None,
             tss_esapi::interface_types::session_handles::SessionType::Policy,
-            SymmetricDefinition::Null,
+            SymmetricDefinition::AES_128_CFB,
             HashingAlgorithm::Sha256,
         )
         .map_err(|_| TPMError::Sealing("session".into()))?
