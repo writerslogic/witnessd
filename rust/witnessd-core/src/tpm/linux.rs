@@ -20,29 +20,17 @@ use tss_esapi::interface_types::resource_handles::{Hierarchy, NvAuth, Provision}
 use tss_esapi::interface_types::session_handles::{AuthSession, PolicySession};
 use tss_esapi::structures::{
     Auth, CreatePrimaryKeyResult, Data, Digest as TssDigest, EccPoint, EccScheme, HashScheme,
-    HashcheckTicket, KeyedHashScheme, NvPublicBuilder, PcrSelectionList, PcrSlot, Private, Public,
-    PublicBuilder, PublicEccParametersBuilder, PublicKeyRsa, PublicKeyedHashParameters,
+    KeyedHashScheme, NvPublicBuilder, PcrSelectionList, PcrSlot, Private, Public, PublicBuilder,
+    PublicEccParametersBuilder, PublicKeyRsa, PublicKeyedHashParameters,
     PublicRsaParametersBuilder, RsaExponent, RsaScheme, SensitiveData, SignatureScheme,
     SymmetricDefinition, SymmetricDefinitionObject,
 };
 use tss_esapi::tcti_ldr::{DeviceConfig, TctiNameConf};
 use tss_esapi::traits::{Marshall, UnMarshall};
-use tss_esapi::tss2_esys::TPMT_TK_HASHCHECK;
 use tss_esapi::Context;
 
 const NV_COUNTER_INDEX: u32 = 0x01500001;
 const NV_COUNTER_SIZE: usize = 8;
-
-/// Create a null HashcheckTicket for unrestricted signing
-fn null_hashcheck_ticket() -> HashcheckTicket {
-    // TPM2_ST_HASHCHECK = 0x8024, TPM2_RH_NULL = 0x40000007
-    let raw = TPMT_TK_HASHCHECK {
-        tag: 0x8024,
-        hierarchy: 0x40000007,
-        digest: Default::default(),
-    };
-    raw.try_into().expect("null ticket should be valid")
-}
 
 struct LinuxState {
     context: Context,
@@ -179,7 +167,7 @@ impl Provider for LinuxTpmProvider {
                 SignatureScheme::RsaSsa {
                     hash_scheme: HashScheme::new(HashingAlgorithm::Sha256),
                 },
-                null_hashcheck_ticket(),
+                None,
             )
             .map_err(|_| TPMError::Signing("sign failed".into()))?
             .marshall()
