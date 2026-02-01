@@ -27,7 +27,7 @@ jobs:
           fetch-depth: 0
 
       - name: Install Rust toolchain
-        uses: dtolnay/rust-action@stable
+        uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy
 
@@ -83,7 +83,7 @@ jobs:
           fetch-depth: 0
 
       - name: Install Rust toolchain
-        uses: dtolnay/rust-action@stable
+        uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
 
@@ -304,80 +304,3 @@ jobs:
             ---
             **Full Changelog**: https://github.com/writerslogic/witnessd/compare/${{ steps.prev_tag.outputs.prev_tag }}...${{ github.ref_name }}
 
-  # ============================================================================
-  # Build Flutter Apps (App Store / Microsoft Store)
-  # ============================================================================
-  build-flutter-macos:
-    name: Build Flutter macOS
-    runs-on: macos-14
-    needs: validate
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.24.0'
-          channel: 'stable'
-          cache: true
-
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-action@stable
-
-      - name: Install flutter_rust_bridge dependencies
-        run: |
-          cargo install flutter_rust_bridge_codegen
-
-      - name: Build Rust library for macOS
-        working-directory: rust/witnessd-core
-        run: |
-          cargo build --release
-
-      - name: Get Flutter dependencies
-        working-directory: witnessd-gui
-        run: flutter pub get
-
-      - name: Build macOS app
-        working-directory: witnessd-gui
-        run: flutter build macos --release
-
-      - name: Upload macOS app
-        uses: actions/upload-artifact@v4
-        with:
-          name: flutter-macos
-          path: witnessd-gui/build/macos/Build/Products/Release/*.app
-
-  build-flutter-windows:
-    name: Build Flutter Windows
-    runs-on: windows-latest
-    needs: validate
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.24.0'
-          channel: 'stable'
-          cache: true
-
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-action@stable
-
-      - name: Build Rust library for Windows
-        working-directory: rust/witnessd-core
-        run: cargo build --release
-
-      - name: Get Flutter dependencies
-        working-directory: witnessd-gui
-        run: flutter pub get
-
-      - name: Build Windows app
-        working-directory: witnessd-gui
-        run: flutter build windows --release
-
-      - name: Upload Windows app
-        uses: actions/upload-artifact@v4
-        with:
-          name: flutter-windows
-          path: witnessd-gui/build/windows/x64/runner/Release/
