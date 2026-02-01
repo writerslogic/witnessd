@@ -61,7 +61,7 @@ impl Engine {
         let accessibility_trusted = platform::macos::check_accessibility_permissions()
             || std::env::var("WITNESSD_SKIP_PERMISSIONS").is_ok();
         #[cfg(not(target_os = "macos"))]
-        let accessibility_trusted = false;
+        let accessibility_trusted = true; // No equivalent permissions on Linux/Windows
         #[cfg(target_os = "macos")]
         let input_trusted = platform::macos::check_input_monitoring_permissions()
             || std::env::var("WITNESSD_SKIP_PERMISSIONS").is_ok();
