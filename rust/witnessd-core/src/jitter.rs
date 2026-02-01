@@ -194,7 +194,10 @@ impl Session {
 
     pub fn record_keystroke(&mut self) -> Result<(u32, bool), String> {
         self.keystroke_count += 1;
-        if !self.keystroke_count.is_multiple_of(self.params.sample_interval) {
+        if !self
+            .keystroke_count
+            .is_multiple_of(self.params.sample_interval)
+        {
             return Ok((0, false));
         }
 
