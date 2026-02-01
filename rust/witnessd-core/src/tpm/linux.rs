@@ -12,7 +12,7 @@ use tss_esapi::handles::{KeyHandle, NvIndexHandle, NvIndexTpmHandle};
 use tss_esapi::interface_types::algorithm::{
     HashingAlgorithm, PublicAlgorithm, RsaSchemeAlgorithm, SignatureSchemeAlgorithm,
 };
-use tss_esapi::interface_types::resource_handles::{Hierarchy, Provision};
+use tss_esapi::interface_types::resource_handles::{Hierarchy, NvAuth, Provision};
 use tss_esapi::interface_types::session_handles::PolicySession;
 use tss_esapi::structures::{
     Auth, Data, Digest as TssDigest, DigestList, EccScheme, NvPublicBuilder, PcrSelectionList,
@@ -456,7 +456,7 @@ fn init_counter(state: &mut LinuxState) -> Result<(), TPMError> {
     let public = NvPublicBuilder::new()
         .with_nv_index(nv_index)
         .with_index_name_algorithm(HashingAlgorithm::Sha256)
-        .with_attributes(attributes)
+        .with_index_attributes(attributes)
         .with_data_size(NV_COUNTER_SIZE)
         .build()
         .map_err(|_| TPMError::CounterNotInit)?;
@@ -471,11 +471,10 @@ fn init_counter(state: &mut LinuxState) -> Result<(), TPMError> {
 }
 
 fn read_counter(state: &mut LinuxState) -> Result<u64, TPMError> {
-    let nv_index = NvIndexTpmHandle::new(NV_COUNTER_INDEX).map_err(|_| TPMError::CounterNotInit)?;
-    let nv_handle: NvIndexHandle = nv_index.into();
+    let nv_handle = NvIndexHandle::from(NV_COUNTER_INDEX);
     let data = state
         .context
-        .nv_read(nv_handle, nv_handle, NV_COUNTER_SIZE, 0)
+        .nv_read(NvAuth::NvIndex(nv_handle), nv_handle, NV_COUNTER_SIZE, 0)
         .map_err(|_| TPMError::CounterNotInit)?;
 
     let bytes = data.value();
@@ -492,11 +491,10 @@ fn increment_counter(state: &mut LinuxState) -> Result<u64, TPMError> {
         init_counter(state)?;
     }
 
-    let nv_index = NvIndexTpmHandle::new(NV_COUNTER_INDEX).map_err(|_| TPMError::CounterNotInit)?;
-    let nv_handle: NvIndexHandle = nv_index.into();
+    let nv_handle = NvIndexHandle::from(NV_COUNTER_INDEX);
     state
         .context
-        .nv_increment(nv_handle, nv_handle)
+        .nv_increment(NvAuth::NvIndex(nv_handle), nv_handle)
         .map_err(|_| TPMError::CounterNotInit)?;
     read_counter(state)
 }
