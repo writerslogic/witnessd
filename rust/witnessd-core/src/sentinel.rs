@@ -1655,11 +1655,8 @@ impl DaemonManager {
         use nix::unistd::Pid;
 
         let pid = self.read_pid()?;
-        kill(Pid::from_raw(pid), Signal::SIGTERM).map_err(|e| {
-            SentinelError::Io(std::io::Error::other(
-                e.to_string(),
-            ))
-        })?;
+        kill(Pid::from_raw(pid), Signal::SIGTERM)
+            .map_err(|e| SentinelError::Io(std::io::Error::other(e.to_string())))?;
         Ok(())
     }
 
@@ -1677,11 +1674,8 @@ impl DaemonManager {
         use nix::unistd::Pid;
 
         let pid = self.read_pid()?;
-        kill(Pid::from_raw(pid), Signal::SIGHUP).map_err(|e| {
-            SentinelError::Io(std::io::Error::other(
-                e.to_string(),
-            ))
-        })?;
+        kill(Pid::from_raw(pid), Signal::SIGHUP)
+            .map_err(|e| SentinelError::Io(std::io::Error::other(e.to_string())))?;
         Ok(())
     }
 
