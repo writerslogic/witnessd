@@ -27,6 +27,7 @@ use tss_esapi::structures::{
 };
 use tss_esapi::tcti_ldr::{DeviceConfig, TctiNameConf};
 use tss_esapi::traits::{Marshall, UnMarshall};
+use tss_esapi::tss2_esys::{TPM2_ALG_NULL, TPM2_RH_NULL, TPMT_TK_HASHCHECK};
 use tss_esapi::Context;
 
 const NV_COUNTER_INDEX: u32 = 0x01500001;
@@ -158,6 +159,18 @@ impl Provider for LinuxTpmProvider {
         payload.extend_from_slice(self.device_id().as_bytes());
 
         let digest = Sha256::digest(&payload);
+
+        // Create a null hashcheck ticket (data was not hashed by the TPM)
+        let null_ticket = HashcheckTicket::try_from(TPMT_TK_HASHCHECK {
+            tag: 0x8024, // TPM2_ST_HASHCHECK
+            hierarchy: TPM2_RH_NULL,
+            digest: tss_esapi::tss2_esys::TPM2B_DIGEST {
+                size: 0,
+                buffer: [0; 64],
+            },
+        })
+        .map_err(|_| TPMError::Signing("ticket".into()))?;
+
         let signature = state
             .context
             .sign(
@@ -167,7 +180,7 @@ impl Provider for LinuxTpmProvider {
                 SignatureScheme::RsaSsa {
                     hash_scheme: HashScheme::new(HashingAlgorithm::Sha256),
                 },
-                HashcheckTicket::default(),
+                null_ticket,
             )
             .map_err(|_| TPMError::Signing("sign failed".into()))?
             .marshall()
