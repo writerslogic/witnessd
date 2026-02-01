@@ -27,10 +27,24 @@ use tss_esapi::structures::{
 };
 use tss_esapi::tcti_ldr::{DeviceConfig, TctiNameConf};
 use tss_esapi::traits::{Marshall, UnMarshall};
+use tss_esapi::tss2_esys::{TPM2B_DIGEST, TPM2_RH_NULL, TPM2_ST_HASHCHECK, TPMT_TK_HASHCHECK};
 use tss_esapi::Context;
 
 const NV_COUNTER_INDEX: u32 = 0x01500001;
 const NV_COUNTER_SIZE: usize = 8;
+
+/// Create a null HashcheckTicket for unrestricted signing
+fn null_hashcheck_ticket() -> HashcheckTicket {
+    let raw = TPMT_TK_HASHCHECK {
+        tag: TPM2_ST_HASHCHECK,
+        hierarchy: TPM2_RH_NULL,
+        digest: TPM2B_DIGEST {
+            size: 0,
+            buffer: [0u8; 64],
+        },
+    };
+    raw.try_into().expect("null ticket should be valid")
+}
 
 struct LinuxState {
     context: Context,
@@ -167,7 +181,7 @@ impl Provider for LinuxTpmProvider {
                 SignatureScheme::RsaSsa {
                     hash_scheme: HashScheme::new(HashingAlgorithm::Sha256),
                 },
-                HashcheckTicket::default(),
+                null_hashcheck_ticket(),
             )
             .map_err(|_| TPMError::Signing("sign failed".into()))?
             .marshall()
