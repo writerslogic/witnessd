@@ -8,13 +8,14 @@ use chrono::Utc;
 use sha2::{Digest as Sha2Digest, Sha256};
 use std::sync::Mutex;
 use tss_esapi::attributes::{NvIndexAttributes, ObjectAttributesBuilder};
+use tss_esapi::constants::SessionType;
 use tss_esapi::handles::{KeyHandle, NvIndexHandle, NvIndexTpmHandle};
 use tss_esapi::interface_types::algorithm::{HashingAlgorithm, PublicAlgorithm, RsaSchemeAlgorithm};
 use tss_esapi::interface_types::resource_handles::{Hierarchy, NvAuth, Provision};
 use tss_esapi::interface_types::session_handles::PolicySession;
 use tss_esapi::structures::{
-    Auth, CreatePrimaryKeyResult, Data, Digest as TssDigest, EccScheme, HashScheme,
-    NvPublicBuilder, PcrSelectionList, PcrSlot, Private, Public, PublicBuilder, PublicEccKey,
+    Auth, CreatePrimaryKeyResult, Data, Digest as TssDigest, EccPoint, EccScheme, HashScheme,
+    NvPublicBuilder, PcrSelectionList, PcrSlot, Private, Public, PublicBuilder,
     PublicEccParametersBuilder, PublicKeyRsa, PublicRsaParametersBuilder, RsaExponent, RsaScheme,
     SignatureScheme, SymmetricDefinition, SymmetricDefinitionObject,
 };
@@ -205,10 +206,8 @@ impl Provider for LinuxTpmProvider {
             .out_public
             .marshall()
             .map_err(|_| TPMError::Sealing("public".into()))?;
-        let priv_bytes = result
-            .out_private
-            .marshall()
-            .map_err(|_| TPMError::Sealing("private".into()))?;
+        // Private is a buffer type - use value() to get bytes
+        let priv_bytes = result.out_private.value().to_vec();
 
         let mut sealed = Vec::with_capacity(8 + pub_bytes.len() + priv_bytes.len());
         sealed.extend_from_slice(&(pub_bytes.len() as u32).to_be_bytes());
@@ -247,8 +246,9 @@ impl Provider for LinuxTpmProvider {
 
         let public =
             Public::unmarshall(pub_bytes).map_err(|_| TPMError::Unsealing("public".into()))?;
+        // Private is a buffer type - use try_from to create from bytes
         let private =
-            Private::unmarshall(priv_bytes).map_err(|_| TPMError::Unsealing("private".into()))?;
+            Private::try_from(priv_bytes).map_err(|_| TPMError::Unsealing("private".into()))?;
 
         let srk = create_srk(&mut state)?;
 
@@ -339,7 +339,7 @@ fn create_srk(state: &mut LinuxState) -> Result<CreatePrimaryKeyResult, TPMError
         .with_name_hashing_algorithm(HashingAlgorithm::Sha256)
         .with_object_attributes(object_attributes)
         .with_ecc_parameters(ecc_params)
-        .with_ecc_unique_identifier(PublicEccKey::default())
+        .with_ecc_unique_identifier(EccPoint::default())
         .build()
         .map_err(|_| TPMError::Sealing("public".into()))?;
 
@@ -501,7 +501,7 @@ fn create_policy_session(
             None,
             None,
             None,
-            tss_esapi::interface_types::session_handles::SessionType::Policy,
+            SessionType::Policy,
             SymmetricDefinition::AES_128_CFB,
             HashingAlgorithm::Sha256,
         )
