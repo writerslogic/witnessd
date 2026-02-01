@@ -2183,7 +2183,7 @@ mod tests {
     fn test_session_detection() {
         let mut events = create_test_events(10);
         // Add a gap
-        events[5].timestamp_ns = events[4].timestamp_ns + 3600_000_000_000; // 1 hour gap
+        events[5].timestamp_ns = events[4].timestamp_ns + 3_600_000_000_000; // 1 hour gap
 
         let sessions = detect_sessions(&events, 1800.0); // 30 min threshold
         assert_eq!(sessions.len(), 2);
