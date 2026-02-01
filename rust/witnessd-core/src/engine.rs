@@ -1,6 +1,7 @@
 use crate::config::WitnessdConfig;
 use crate::identity::SecureStorage;
 use crate::jitter::SimpleJitterSession;
+#[cfg(target_os = "macos")]
 use crate::platform;
 use crate::store::{SecureEvent, SecureStore};
 use anyhow::{anyhow, Context, Result};

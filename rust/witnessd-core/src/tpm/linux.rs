@@ -27,8 +27,12 @@ use tss_esapi::structures::{
 };
 use tss_esapi::tcti_ldr::{DeviceConfig, TctiNameConf};
 use tss_esapi::traits::{Marshall, UnMarshall};
-use tss_esapi::tss2_esys::{TPM2_ALG_NULL, TPM2_RH_NULL, TPMT_TK_HASHCHECK};
+use tss_esapi::tss2_esys::TPMT_TK_HASHCHECK;
 use tss_esapi::Context;
+
+// TPM2 constants for creating null tickets
+const TPM2_RH_NULL: u32 = 0x40000007;
+const TPM2_ST_HASHCHECK: u16 = 0x8024;
 
 const NV_COUNTER_INDEX: u32 = 0x01500001;
 const NV_COUNTER_SIZE: usize = 8;
@@ -162,7 +166,7 @@ impl Provider for LinuxTpmProvider {
 
         // Create a null hashcheck ticket (data was not hashed by the TPM)
         let null_ticket = HashcheckTicket::try_from(TPMT_TK_HASHCHECK {
-            tag: 0x8024, // TPM2_ST_HASHCHECK
+            tag: TPM2_ST_HASHCHECK,
             hierarchy: TPM2_RH_NULL,
             digest: tss_esapi::tss2_esys::TPM2B_DIGEST {
                 size: 0,
