@@ -25,7 +25,7 @@ use tss_esapi::traits::Marshall;
 use tss_esapi::Context;
 
 const NV_COUNTER_INDEX: u32 = 0x01500001;
-const NV_COUNTER_SIZE: u16 = 8;
+const NV_COUNTER_SIZE: usize = 8;
 
 struct LinuxState {
     context: Context,
@@ -415,7 +415,7 @@ fn build_pcr_selection(pcrs: &[u32]) -> Result<PcrSelectionList, TPMError> {
 
 fn read_pcrs(state: &mut LinuxState, pcrs: &[u32]) -> Result<Vec<PcrValue>, TPMError> {
     let selection = build_pcr_selection(pcrs)?;
-    let (_, digests) = state
+    let (_, _, digests) = state
         .context
         .pcr_read(selection)
         .map_err(|_| TPMError::Quote("pcr read".into()))?;
@@ -443,7 +443,7 @@ fn init_counter(state: &mut LinuxState) -> Result<(), TPMError> {
     }
 
     let attributes = NvIndexAttributes::builder()
-        .with_nv_nt(tss_esapi::constants::NvIndexType::Counter)
+        .with_nv_index_type(tss_esapi::constants::NvIndexType::Counter)
         .with_owner_write(true)
         .with_owner_read(true)
         .build()
@@ -470,7 +470,7 @@ fn read_counter(state: &mut LinuxState) -> Result<u64, TPMError> {
     let nv_handle = NvIndexHandle::from(NV_COUNTER_INDEX);
     let data = state
         .context
-        .nv_read(NvAuth::NvIndex(nv_handle), nv_handle, NV_COUNTER_SIZE, 0)
+        .nv_read(NvAuth::NvIndex(nv_handle), nv_handle, NV_COUNTER_SIZE as u16, 0)
         .map_err(|_| TPMError::CounterNotInit)?;
 
     let bytes = data.value();
