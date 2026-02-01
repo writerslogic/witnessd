@@ -144,10 +144,13 @@ jobs:
         id: hash
         shell: bash
         run: |
-          if [[ "$RUNNER_OS" == "Windows" ]]; then
+          if [[ "$RUNNER_OS" == "macOS" ]]; then
+            shasum -a 256 "${{ env.ARCHIVE }}" | base64 > hash.txt
+          elif [[ "$RUNNER_OS" == "Windows" ]]; then
             sha256sum "${{ env.ARCHIVE }}" | base64 -w0 > hash.txt
           else
-            shasum -a 256 "${{ env.ARCHIVE }}" | base64 > hash.txt
+            # Linux
+            sha256sum "${{ env.ARCHIVE }}" | base64 -w0 > hash.txt
           fi
           echo "hashes=$(cat hash.txt)" >> "$GITHUB_OUTPUT"
 
