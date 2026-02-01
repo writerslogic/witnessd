@@ -5,7 +5,7 @@ use super::{
     Quote, TPMError,
 };
 use chrono::Utc;
-use sha2::{Digest, Sha256};
+use sha2::{Digest as Sha2Digest, Sha256};
 use std::sync::Mutex;
 use tss_esapi::attributes::{NvIndexAttributes, ObjectAttributesBuilder};
 use tss_esapi::handles::{AuthHandle, KeyHandle, NvIndexTpmHandle, TpmHandle};
@@ -13,11 +13,12 @@ use tss_esapi::interface_types::algorithm::{
     HashingAlgorithm, PublicAlgorithm, RsaSchemeAlgorithm, SignatureSchemeAlgorithm,
 };
 use tss_esapi::interface_types::resource_handles::Hierarchy;
+use tss_esapi::interface_types::session_handles::PolicySession;
 use tss_esapi::structures::{
-    Auth, Data, Digest, DigestList, EccScheme, NvPublicBuilder, PcrSelectionList,
+    Auth, Data, Digest as TssDigest, DigestList, EccScheme, NvPublicBuilder, PcrSelectionList,
     PcrSelectionListBuilder, PcrSlot, Public, PublicBuilder, PublicEccKey,
     PublicEccParametersBuilder, PublicKeyRsa, PublicRsaParametersBuilder, RsaExponent, RsaScheme,
-    SignatureScheme, SymmetricDefinitionObject,
+    SignatureScheme, SymmetricDefinition, SymmetricDefinitionObject,
 };
 use tss_esapi::tcti_ldr::TctiNameConf;
 use tss_esapi::traits::Marshall;
@@ -149,7 +150,7 @@ impl Provider for LinuxTpmProvider {
             .context
             .sign(
                 ak_handle,
-                Digest::try_from(digest.as_slice())
+                TssDigest::try_from(digest.as_slice())
                     .map_err(|_| TPMError::Signing("digest".into()))?,
                 SignatureScheme::create(SignatureSchemeAlgorithm::RsaSsa, HashingAlgorithm::Sha256)
                     .map_err(|_| TPMError::Signing("scheme".into()))?,
@@ -513,15 +514,20 @@ fn create_policy_session(
             None,
             None,
             tss_esapi::interface_types::session_handles::SessionType::Policy,
-            SymmetricDefinitionObject::Null,
+            SymmetricDefinition::Null,
             HashingAlgorithm::Sha256,
         )
-        .map_err(|_| TPMError::Sealing("session".into()))?;
+        .map_err(|_| TPMError::Sealing("session".into()))?
+        .ok_or_else(|| TPMError::Sealing("no session returned".into()))?;
+
+    let policy_session: PolicySession = session
+        .try_into()
+        .map_err(|_| TPMError::Sealing("session conversion".into()))?;
 
     state
         .context
-        .policy_pcr(session, Digest::default(), selection)
+        .policy_pcr(policy_session, TssDigest::default(), selection)
         .map_err(|_| TPMError::Sealing("policy".into()))?;
 
-    Ok(session)
+    Ok(session.into())
 }
