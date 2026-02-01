@@ -6,7 +6,6 @@ use super::{
 };
 use chrono::Utc;
 use sha2::{Digest as Sha2Digest, Sha256};
-use std::path::PathBuf;
 use std::sync::Mutex;
 use tss_esapi::attributes::{NvIndexAttributes, ObjectAttributesBuilder};
 use tss_esapi::constants::SessionType;
@@ -49,14 +48,12 @@ pub struct LinuxTpmProvider {
 }
 
 pub fn try_init() -> Option<LinuxTpmProvider> {
-    let tcti = TctiNameConf::Device(DeviceConfig {
-        path: PathBuf::from("/dev/tpmrm0"),
-    });
+    // Try /dev/tpmrm0 first (resource manager), fall back to /dev/tpm0
+    let tcti = TctiNameConf::Device("/dev/tpmrm0".parse().unwrap_or_default());
     let context = Context::new(tcti)
         .or_else(|_| {
-            Context::new(TctiNameConf::Device(DeviceConfig {
-                path: PathBuf::from("/dev/tpm0"),
-            }))
+            // Fall back to default device (/dev/tpm0)
+            Context::new(TctiNameConf::Device(DeviceConfig::default()))
         })
         .ok()?;
 
