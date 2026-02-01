@@ -1,3 +1,5 @@
+#![allow(clippy::items_after_test_module)]
+
 use chrono::{DateTime, Utc};
 use rand::rngs::{OsRng, StdRng};
 use rand::Rng;

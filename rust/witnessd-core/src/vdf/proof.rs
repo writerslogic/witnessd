@@ -128,6 +128,7 @@ fn compute_chain(input: [u8; 32], iterations: u64) -> [u8; 32] {
 }
 
 #[cfg(test)]
+#[allow(clippy::needless_borrows_for_generic_args)]
 mod tests {
     use super::*;
     use crate::vdf::default_parameters;
