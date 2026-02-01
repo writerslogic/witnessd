@@ -961,8 +961,7 @@ pub mod windows {
     use windows::Win32::UI::Accessibility::{CUIAutomation, IUIAutomation};
     use windows::Win32::UI::WindowsAndMessaging::{
         CallNextHookEx, GetForegroundWindow, GetMessageW, GetWindowThreadProcessId,
-        SetWinEventHook, SetWindowsHookExW, EVENT_SYSTEM_FOREGROUND, KBDLLHOOKSTRUCT, MSG,
-        WH_KEYBOARD_LL, WINEVENT_OUTOFCONTEXT, WM_KEYDOWN, WM_SYSKEYDOWN,
+        SetWindowsHookExW, KBDLLHOOKSTRUCT, MSG, WH_KEYBOARD_LL, WM_KEYDOWN, WM_SYSKEYDOWN,
     };
 
     pub struct FocusInfo {
