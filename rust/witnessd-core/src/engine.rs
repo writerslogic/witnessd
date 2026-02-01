@@ -41,6 +41,7 @@ struct EngineInner {
     status: Mutex<EngineStatus>,
     store: Mutex<SecureStore>,
     jitter_session: Arc<Mutex<SimpleJitterSession>>,
+    #[cfg(target_os = "macos")]
     keystroke_monitor: Mutex<Option<platform::macos::KeystrokeMonitor>>,
     watcher: Mutex<Option<RecommendedWatcher>>,
     file_sizes: Mutex<HashMap<PathBuf, i64>>,
@@ -92,6 +93,7 @@ impl Engine {
             status: Mutex::new(status),
             store: Mutex::new(store),
             jitter_session: Arc::clone(&jitter_session),
+            #[cfg(target_os = "macos")]
             keystroke_monitor: Mutex::new(None),
             watcher: Mutex::new(None),
             file_sizes: Mutex::new(HashMap::new()),
@@ -120,7 +122,10 @@ impl Engine {
     pub fn pause(&self) -> Result<()> {
         self.inner.running.store(false, Ordering::SeqCst);
         *self.inner.watcher.lock().unwrap() = None;
-        *self.inner.keystroke_monitor.lock().unwrap() = None;
+        #[cfg(target_os = "macos")]
+        {
+            *self.inner.keystroke_monitor.lock().unwrap() = None;
+        }
 
         let mut status = self.inner.status.lock().unwrap();
         status.running = false;
