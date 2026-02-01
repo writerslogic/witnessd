@@ -69,7 +69,7 @@ impl VdfProof {
         let report_interval = std::cmp::max(1, self.iterations / 100);
 
         for i in 0..self.iterations {
-            hash = Sha256::digest(&hash).into();
+            hash = Sha256::digest(hash).into();
             if let Some(ref mut callback) = progress {
                 if i % report_interval == 0 {
                     callback(i as f64 / self.iterations as f64);
@@ -122,7 +122,7 @@ impl VdfProof {
 fn compute_chain(input: [u8; 32], iterations: u64) -> [u8; 32] {
     let mut hash = input;
     for _ in 0..iterations {
-        hash = Sha256::digest(&hash).into();
+        hash = Sha256::digest(hash).into();
     }
     hash
 }
