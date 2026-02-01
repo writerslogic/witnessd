@@ -10,15 +10,20 @@ use std::path::PathBuf;
 use std::sync::Mutex;
 use tss_esapi::attributes::{NvIndexAttributes, ObjectAttributesBuilder};
 use tss_esapi::constants::SessionType;
+use tss_esapi::handles::SessionHandle;
 use tss_esapi::handles::{KeyHandle, NvIndexHandle, NvIndexTpmHandle};
-use tss_esapi::interface_types::algorithm::{HashingAlgorithm, PublicAlgorithm, RsaSchemeAlgorithm};
+use tss_esapi::interface_types::algorithm::{
+    HashingAlgorithm, PublicAlgorithm, RsaSchemeAlgorithm,
+};
+use tss_esapi::interface_types::key_bits::RsaKeyBits;
 use tss_esapi::interface_types::resource_handles::{Hierarchy, NvAuth, Provision};
 use tss_esapi::interface_types::session_handles::{AuthSession, PolicySession};
 use tss_esapi::structures::{
     Auth, CreatePrimaryKeyResult, Data, Digest as TssDigest, EccPoint, EccScheme, HashScheme,
     KeyedHashScheme, NvPublicBuilder, PcrSelectionList, PcrSlot, Private, Public, PublicBuilder,
-    PublicEccParametersBuilder, PublicKeyRsa, PublicRsaParametersBuilder, RsaExponent, RsaScheme,
-    SensitiveData, SignatureScheme, SymmetricDefinition, SymmetricDefinitionObject,
+    PublicEccParametersBuilder, PublicKeyRsa, PublicKeyedHashParameters,
+    PublicRsaParametersBuilder, RsaExponent, RsaScheme, SensitiveData, SignatureScheme,
+    SymmetricDefinition, SymmetricDefinitionObject,
 };
 use tss_esapi::tcti_ldr::{DeviceConfig, TctiNameConf};
 use tss_esapi::traits::{Marshall, UnMarshall};
@@ -112,7 +117,7 @@ impl Provider for LinuxTpmProvider {
                 ak_handle,
                 Data::try_from(qualifying).map_err(|_| TPMError::Quote("bad nonce".into()))?,
                 SignatureScheme::RsaSsa {
-                    scheme: HashScheme::new(HashingAlgorithm::Sha256),
+                    hash_scheme: HashScheme::new(HashingAlgorithm::Sha256),
                 },
                 selection,
             )
@@ -160,7 +165,7 @@ impl Provider for LinuxTpmProvider {
                 TssDigest::try_from(digest.as_slice())
                     .map_err(|_| TPMError::Signing("digest".into()))?,
                 SignatureScheme::RsaSsa {
-                    scheme: HashScheme::new(HashingAlgorithm::Sha256),
+                    hash_scheme: HashScheme::new(HashingAlgorithm::Sha256),
                 },
                 None,
             )
@@ -230,7 +235,8 @@ impl Provider for LinuxTpmProvider {
         sealed.extend_from_slice(&priv_bytes);
 
         let _ = state.context.flush_context(srk.key_handle.into());
-        let _ = state.context.flush_context(session.into());
+        let session_handle: SessionHandle = session.into();
+        let _ = state.context.flush_context(session_handle.into());
 
         Ok(sealed)
     }
@@ -274,9 +280,7 @@ impl Provider for LinuxTpmProvider {
         let session = create_policy_session(&mut state, &default_pcr_selection())?;
 
         // Set the policy session on the context
-        state
-            .context
-            .set_sessions((Some(session), None, None));
+        state.context.set_sessions((Some(session), None, None));
 
         let unsealed = state
             .context
@@ -288,7 +292,8 @@ impl Provider for LinuxTpmProvider {
 
         let _ = state.context.flush_context(load_handle.into());
         let _ = state.context.flush_context(srk.key_handle.into());
-        let _ = state.context.flush_context(session.into());
+        let session_handle: SessionHandle = session.into();
+        let _ = state.context.flush_context(session_handle.into());
 
         Ok(unsealed.value().to_vec())
     }
@@ -311,7 +316,7 @@ fn create_ak(state: &mut LinuxState) -> Result<(KeyHandle, Vec<u8>), TPMError> {
             RsaScheme::create(RsaSchemeAlgorithm::RsaSsa, Some(HashingAlgorithm::Sha256))
                 .map_err(|_| TPMError::NotAvailable)?,
         )
-        .with_key_bits(2048)
+        .with_key_bits(RsaKeyBits::Rsa2048)
         .with_exponent(RsaExponent::default())
         .build()
         .map_err(|_| TPMError::NotAvailable)?;
@@ -350,8 +355,8 @@ fn create_sealing_public() -> Result<Public, TPMError> {
         .with_public_algorithm(PublicAlgorithm::KeyedHash)
         .with_name_hashing_algorithm(HashingAlgorithm::Sha256)
         .with_object_attributes(object_attributes)
-        .with_keyed_hash_scheme(KeyedHashScheme::Null)
-        .with_keyed_hash_unique_identifier(Default::default())
+        .with_keyed_hash_parameters(PublicKeyedHashParameters::new(KeyedHashScheme::Null))
+        .with_keyed_hash_unique_identifier(TssDigest::default())
         .build()
         .map_err(|_| TPMError::Sealing("sealing public".into()))
 }
@@ -411,7 +416,7 @@ fn get_device_id(state: &mut LinuxState) -> Result<Vec<u8>, TPMError> {
                     RsaScheme::create(RsaSchemeAlgorithm::Null, None)
                         .map_err(|_| TPMError::NotAvailable)?,
                 )
-                .with_key_bits(2048)
+                .with_key_bits(RsaKeyBits::Rsa2048)
                 .with_exponent(RsaExponent::default())
                 .build()
                 .map_err(|_| TPMError::NotAvailable)?,
@@ -505,7 +510,12 @@ fn read_counter(state: &mut LinuxState) -> Result<u64, TPMError> {
     let nv_handle = NvIndexHandle::from(NV_COUNTER_INDEX);
     let data = state
         .context
-        .nv_read(NvAuth::NvIndex(nv_handle), nv_handle, NV_COUNTER_SIZE as u16, 0)
+        .nv_read(
+            NvAuth::NvIndex(nv_handle),
+            nv_handle,
+            NV_COUNTER_SIZE as u16,
+            0,
+        )
         .map_err(|_| TPMError::CounterNotInit)?;
 
     let bytes = data.value();
