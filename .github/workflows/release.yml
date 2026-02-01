@@ -152,7 +152,7 @@ jobs:
           echo "hashes=$(cat hash.txt)" >> "$GITHUB_OUTPUT"
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: binary-${{ matrix.target }}
           path: ${{ env.ARCHIVE }}
@@ -225,7 +225,7 @@ jobs:
           syft dir:. -o cyclonedx-json=witnessd-sbom.cdx.json
 
       - name: Upload SBOMs
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: sbom
           path: |
