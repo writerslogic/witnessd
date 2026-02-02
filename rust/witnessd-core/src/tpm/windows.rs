@@ -15,7 +15,8 @@ use std::sync::Mutex;
 // Re-export the TBS functions from the windows crate
 use windows::Win32::System::TpmBaseServices::{
     Tbsi_Context_Create, Tbsi_GetDeviceInfo, Tbsip_Context_Close, Tbsip_Submit_Command,
-    TBS_CONTEXT_PARAMS, TBS_CONTEXT_PARAMS2, TPM_DEVICE_INFO,
+    TBS_COMMAND_LOCALITY, TBS_COMMAND_PRIORITY, TBS_CONTEXT_PARAMS, TBS_CONTEXT_PARAMS2,
+    TPM_DEVICE_INFO,
 };
 
 // ============================================================================
@@ -254,17 +255,14 @@ impl TbsContext {
         }
 
         let mut response = vec![0u8; MAX_RESPONSE_SIZE];
-        let mut response_size = MAX_RESPONSE_SIZE as u32;
 
         let result = unsafe {
             Tbsip_Submit_Command(
                 self.handle,
-                TBS_COMMAND_LOCALITY_ZERO,
-                TBS_COMMAND_PRIORITY_NORMAL,
-                command.as_ptr(),
-                command.len() as u32,
-                response.as_mut_ptr(),
-                &mut response_size,
+                TBS_COMMAND_LOCALITY(TBS_COMMAND_LOCALITY_ZERO),
+                TBS_COMMAND_PRIORITY(TBS_COMMAND_PRIORITY_NORMAL),
+                command,
+                &mut response,
             )
         };
 
@@ -272,12 +270,21 @@ impl TbsContext {
             return Err(tbs_result_to_error(result));
         }
 
-        response.truncate(response_size as usize);
-
-        // Verify minimum response size (10 bytes for header)
+        // TPM2 response header contains the response size in bytes 2-5 (big-endian)
         if response.len() < TPM2_RESPONSE_HEADER_SIZE {
             return Err(TbsError::ResponseTooShort);
         }
+
+        // Extract response size from header
+        let response_size =
+            u32::from_be_bytes([response[2], response[3], response[4], response[5]]) as usize;
+
+        // Validate response size
+        if response_size < TPM2_RESPONSE_HEADER_SIZE || response_size > response.len() {
+            return Err(TbsError::ResponseTooShort);
+        }
+
+        response.truncate(response_size);
 
         // Check TPM response code (bytes 6-9, big-endian)
         let rc = u32::from_be_bytes([response[6], response[7], response[8], response[9]]);
