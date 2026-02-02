@@ -255,6 +255,7 @@ impl TbsContext {
         }
 
         let mut response = vec![0u8; MAX_RESPONSE_SIZE];
+        let mut response_size = MAX_RESPONSE_SIZE as u32;
 
         let result = unsafe {
             Tbsip_Submit_Command(
@@ -262,7 +263,8 @@ impl TbsContext {
                 TBS_COMMAND_LOCALITY(TBS_COMMAND_LOCALITY_ZERO),
                 TBS_COMMAND_PRIORITY(TBS_COMMAND_PRIORITY_NORMAL),
                 command,
-                &mut response,
+                response.as_mut_ptr(),
+                &mut response_size,
             )
         };
 
@@ -270,21 +272,13 @@ impl TbsContext {
             return Err(tbs_result_to_error(result));
         }
 
-        // TPM2 response header contains the response size in bytes 2-5 (big-endian)
+        // Truncate to actual response size
+        response.truncate(response_size as usize);
+
+        // Verify minimum response size (10 bytes for header)
         if response.len() < TPM2_RESPONSE_HEADER_SIZE {
             return Err(TbsError::ResponseTooShort);
         }
-
-        // Extract response size from header
-        let response_size =
-            u32::from_be_bytes([response[2], response[3], response[4], response[5]]) as usize;
-
-        // Validate response size
-        if response_size < TPM2_RESPONSE_HEADER_SIZE || response_size > response.len() {
-            return Err(TbsError::ResponseTooShort);
-        }
-
-        response.truncate(response_size);
 
         // Check TPM response code (bytes 6-9, big-endian)
         let rc = u32::from_be_bytes([response[6], response[7], response[8], response[9]]);
