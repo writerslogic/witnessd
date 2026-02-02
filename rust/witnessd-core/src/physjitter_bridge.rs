@@ -511,31 +511,36 @@ impl HybridJitterSession {
     }
 
     fn compute_stats(&self) -> Statistics {
-        let mut stats = Statistics::default();
-        stats.total_keystrokes = self.keystroke_count;
-        stats.total_samples = self.samples.len() as i32;
-
         let end = self.ended_at.unwrap_or_else(Utc::now);
-        stats.duration = end
+        let duration = end
             .signed_duration_since(self.started_at)
             .to_std()
             .unwrap_or(Duration::from_secs(0));
 
-        if stats.duration.as_secs_f64() > 0.0 {
-            let minutes = stats.duration.as_secs_f64() / 60.0;
+        let keystrokes_per_min = if duration.as_secs_f64() > 0.0 {
+            let minutes = duration.as_secs_f64() / 60.0;
             if minutes > 0.0 {
-                stats.keystrokes_per_min = self.keystroke_count as f64 / minutes;
+                self.keystroke_count as f64 / minutes
+            } else {
+                0.0
             }
-        }
+        } else {
+            0.0
+        };
 
         let mut seen = std::collections::HashSet::new();
         for sample in &self.samples {
             seen.insert(sample.document_hash);
         }
-        stats.unique_doc_hashes = seen.len() as i32;
-        stats.chain_valid = self.verify_chain().is_ok();
 
-        stats
+        Statistics {
+            total_keystrokes: self.keystroke_count,
+            total_samples: self.samples.len() as i32,
+            duration,
+            keystrokes_per_min,
+            unique_doc_hashes: seen.len() as i32,
+            chain_valid: self.verify_chain().is_ok(),
+        }
     }
 
     /// Save session to disk.
