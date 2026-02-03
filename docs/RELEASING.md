@@ -4,68 +4,43 @@ This document describes how to create and publish releases of witnessd.
 
 ## Prerequisites
 
-1. **goreleaser** - Install via Homebrew:
-   ```bash
-   brew install goreleaser
-   ```
+1. **Rust Toolchain** - Stable release.
 
-2. **Apple Developer Account** - For macOS code signing and notarization
+2. **cargo-dist** - For building distributable artifacts (optional, handled by CI).
 
-3. **GitHub Token** - With `repo` scope for publishing releases
+3. **Apple Developer Account** - For macOS code signing and notarization.
 
-4. **Homebrew Tap Repository** - Create `writerslogic/homebrew-tap` on GitHub
+4. **GitHub Token** - With `repo` scope for publishing releases.
 
 ## Environment Variables
 
-Set these environment variables before running a release:
+Set these environment variables in your CI/CD (GitHub Secrets) or locally:
 
 ```bash
 # GitHub
 export GITHUB_TOKEN="ghp_..."           # GitHub personal access token
-export HOMEBREW_TAP_TOKEN="ghp_..."     # Token for homebrew-tap repo
 
 # Apple Developer (for macOS notarization)
 export APPLE_DEVELOPER_ID="Developer ID Application: Your Name (TEAMID)"
 export APPLE_ISSUER_ID="..."            # App Store Connect API Issuer ID
 export APPLE_KEY_ID="..."               # App Store Connect API Key ID
-export APPLE_PRIVATE_KEY="path/to/AuthKey_XXXX.p8"
-
-# Optional: For other package managers
-export SCOOP_BUCKET_TOKEN="ghp_..."     # For Windows Scoop bucket
-export AUR_SSH_PRIVATE_KEY="..."        # For Arch Linux AUR
-```
-
-## Apple Developer Setup
-
-### 1. Create Developer ID Certificate
-
-1. Go to [Apple Developer](https://developer.apple.com/account/)
-2. Navigate to Certificates, Identifiers & Profiles
-3. Create a new "Developer ID Application" certificate
-4. Download and install in Keychain
-
-### 2. Create App Store Connect API Key
-
-1. Go to [App Store Connect](https://appstoreconnect.apple.com/)
-2. Navigate to Users and Access > Keys
-3. Click "+" to create a new key
-4. Download the .p8 file (only available once!)
-5. Note the Key ID and Issuer ID
-
-### 3. Verify Setup
-
-```bash
-# Check certificate is installed
-security find-identity -v -p codesigning
-
-# Test signing locally
-make build
-make sign
+# The private key content or path
+export APPLE_API_KEY="..."
 ```
 
 ## Creating a Release
 
 ### 1. Update Version
+
+Update the version in `rust/witnessd-cli/Cargo.toml` and `rust/witnessd-core/Cargo.toml`.
+
+```bash
+# Example: bump version to 0.1.0
+# Commit changes
+git commit -am "chore: bump version to 0.1.0"
+```
+
+### 2. Create Tag
 
 Witnessd uses git tags for versioning. Create a new tag:
 
@@ -74,120 +49,54 @@ git tag -a v0.1.0 -m "Release v0.1.0"
 git push origin v0.1.0
 ```
 
-### 2. Run goreleaser
+### 3. CI/CD Release
 
-For a full release:
-```bash
-make release
-```
+The GitHub Actions workflow (`.github/workflows/release.yml`) will automatically:
+1. Build binaries for macOS, Linux, and Windows.
+2. Sign and notarize macOS binaries.
+3. Create a GitHub Release with artifacts.
+4. Generate SLSA provenance.
 
-For a snapshot (testing):
-```bash
-make release-snapshot
-```
-
-For a dry run (no publishing):
-```bash
-make release-dry-run
-```
-
-### 3. Verify Release
+### 4. Verify Release
 
 1. Check [GitHub Releases](https://github.com/writerslogic/witnessd/releases)
-2. Verify checksums
-3. Test installation:
-   ```bash
-   brew install writerslogic/tap/witnessd
-   witnessd version
-   ```
+2. Verify checksums and signatures.
 
-## Manual Signing (without goreleaser)
+## Manual Signing (macOS)
 
 If you need to sign binaries manually:
 
 ```bash
-# Build
-make build
+# Build release binary
+cd rust/witnessd-cli
+cargo build --release
 
 # Sign
-export APPLE_DEVELOPER_ID="Developer ID Application: Your Name (TEAMID)"
-make sign
+codesign --force --options runtime --sign "$APPLE_DEVELOPER_ID" target/release/witnessd
 
-# Notarize
-export APPLE_ISSUER_ID="..."
-export APPLE_KEY_ID="..."
-export APPLE_PRIVATE_KEY="path/to/AuthKey.p8"
-make notarize
+# Verify signature
+codesign -dv --verbose=4 target/release/witnessd
 ```
 
 ## Package Managers
 
 ### Homebrew (macOS/Linux)
 
-Goreleaser automatically updates the Homebrew tap. Users install with:
-```bash
-brew install writerslogic/tap/witnessd
-```
+The release workflow can configured to update a Homebrew tap.
 
-### APT/DEB (Debian/Ubuntu)
+### Linux Packages
 
-.deb packages are generated automatically. To host:
-1. Create a GitHub release with the .deb file
-2. Or set up an APT repository
+CI generates `.tar.gz` archives. Users can install by extracting to `$PATH`.
 
-### RPM (Fedora/RHEL)
+### Windows
 
-.rpm packages are generated automatically.
-
-### Scoop (Windows)
-
-Goreleaser updates the Scoop bucket. Users install with:
-```powershell
-scoop bucket add witnessd https://github.com/writerslogic/scoop-bucket
-scoop install witnessd
-```
-
-### AUR (Arch Linux)
-
-The `witnessd-bin` package is automatically updated in the AUR.
-
-## Troubleshooting
-
-### "Developer ID Application" not found
-
-Make sure the certificate is installed in your Keychain and not expired:
-```bash
-security find-identity -v -p codesigning
-```
-
-### Notarization fails
-
-1. Check the notarization log:
-   ```bash
-   xcrun notarytool log <submission-id> \
-     --issuer "$APPLE_ISSUER_ID" \
-     --key-id "$APPLE_KEY_ID" \
-     --key "$APPLE_PRIVATE_KEY"
-   ```
-
-2. Common issues:
-   - Missing `--options runtime` in codesign
-   - Unsigned dependencies
-   - Hardened runtime issues
-
-### GitHub token issues
-
-Ensure your token has the `repo` scope and hasn't expired.
+CI generates `.zip` archives.
 
 ## Release Checklist
 
-- [ ] All tests pass: `make test`
-- [ ] Linting passes: `make lint`
+- [ ] All tests pass: `cargo test --all-features`
+- [ ] Linting passes: `cargo clippy`
 - [ ] Documentation updated
-- [ ] CHANGELOG updated (if not using auto-changelog)
+- [ ] Version bumped in Cargo.toml files
 - [ ] Version tag created and pushed
-- [ ] Environment variables set
-- [ ] `make release` succeeds
 - [ ] GitHub release looks correct
-- [ ] Homebrew installation works
-- [ ] Windows/Linux packages work

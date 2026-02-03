@@ -58,6 +58,11 @@ openssl dgst -sha256 -hex document.txt
 # Python
 python3 -c "import hashlib; print(hashlib.sha256(open('document.txt','rb').read()).hexdigest())"
 
+# Rust
+# (requires cargo-script or similar, or full file)
+# echo 'fn main() { println!("{}", hex::encode(sha2::Sha256::digest(std::fs::read("document.txt").unwrap()))); }' > verify.rs
+# cargo run
+
 # Go
 go run -e 'package main; import ("crypto/sha256"; "encoding/hex"; "os"; "fmt"); func main() { d,_:=os.ReadFile("document.txt"); fmt.Println(hex.EncodeToString(sha256.New().Sum(d))) }'
 ```

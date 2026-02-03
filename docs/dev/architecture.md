@@ -17,10 +17,9 @@ This document describes the architecture of witnessd, including component relati
 
 Witnessd is a cryptographic authorship witnessing system composed of:
 
-1. **CLI Application** (`cmd/witnessd`): Primary interface for checkpointing and verification
-2. **Internal Libraries** (`internal/`): Core logic for evidence creation and verification
-3. **Package Libraries** (`pkg/`): Reusable components (anchoring, verification)
-4. **macOS Application** (`platforms/macos/`): Native GUI for macOS
+1. **CLI Application** (`rust/witnessd-cli`): Primary interface for checkpointing and verification
+2. **Core Library** (`rust/witnessd-core`): Core logic for evidence creation and verification
+3. **Platform Wrappers** (`platforms/`): Native GUI/daemon integrations (e.g. macOS App)
 
 ## Architecture Diagram
 
@@ -30,50 +29,39 @@ Witnessd is a cryptographic authorship witnessing system composed of:
 ├─────────────────────────────────┬───────────────────────────────────────────────┤
 │         CLI (witnessd)          │           macOS App (WitnessdApp)             │
 │  ┌─────────────────────────┐    │    ┌─────────────────────────────────────┐   │
-│  │ cmd/witnessd/main.go    │    │    │ StatusBarController.swift           │   │
+│  │ rust/witnessd-cli/src   │    │    │ WitnessdApp.swift                   │   │
 │  │ - init, commit, log     │    │    │ - Menu bar UI                       │   │
 │  │ - export, verify        │    │    │ - Quick actions                     │   │
-│  │ - track, sentinel       │    │    ├─────────────────────────────────────┤   │
-│  │ - presence, calibrate   │    │    │ WitnessdBridge.swift                │   │
-│  │ - Interactive menu      │    │    │ - CLI subprocess wrapper            │   │
-│  └─────────────────────────┘    │    │ - JSON IPC                          │   │
-└─────────────────────────────────┴────┴─────────────────────────────────────────┘
-                                           │
-                                           ▼
+│  │ - track, calibrate      │    │    ├─────────────────────────────────────┤   │
+│  │ - smart_defaults.rs     │    │    │ WitnessdBridge.swift                │   │
+│  └─────────────────────────┘    │    │ - CLI subprocess wrapper            │   │
+└──────────────┬──────────────────┴────┴─────────────────────────────────────────┘
+               │                           │
+               │ (Library Calls)           │ (JSON IPC / CLI)
+               ▼                           ▼
 ┌─────────────────────────────────────────────────────────────────────────────────┐
-│                              CORE LIBRARIES                                      │
+│                              CORE LIBRARY (witnessd-core)                        │
 ├───────────────────┬───────────────────┬───────────────────┬─────────────────────┤
-│ internal/config   │ internal/evidence │ internal/store    │ internal/keyhierarchy│
+│ src/config.rs     │ src/evidence.rs   │ src/store.rs      │ src/keyhierarchy    │
 │ - Config loading  │ - Evidence packet │ - SecureStore     │ - Master identity   │
-│ - Validation      │ - Declaration     │ - HMAC integrity  │ - Session certs     │
+│ - Validation      │ - Declaration     │ - Integrity       │ - Session certs     │
 │ - Defaults        │ - Export/import   │ - SQLite backend  │ - Ratchet keys      │
 ├───────────────────┼───────────────────┼───────────────────┼─────────────────────┤
-│ internal/vdf      │ internal/mmr      │ internal/wal      │ internal/checkpoint │
+│ src/vdf/          │ src/mmr/          │ src/wal.rs        │ src/checkpoint.rs   │
 │ - VDF compute     │ - Merkle Mountain │ - Write-ahead log │ - Checkpoint chain  │
 │ - VDF verify      │   Range           │ - Crash recovery  │ - Hash linking      │
-│ - Calibration     │ - Inclusion proof │ - Append-only     │ - Signatures        │
+│ - Calibration     │ - Inclusion proof │                   │ - Signatures        │
 ├───────────────────┼───────────────────┼───────────────────┼─────────────────────┤
-│ internal/tracking │ internal/jitter   │ internal/sentinel │ internal/presence   │
-│ - Keystroke count │ - Timing jitter   │ - Background      │ - Presence verify   │
+│ src/jitter/       │ src/analysis/     │ src/sentinel/     │ src/presence/       │
+│ - Keystroke logic │ - Forensics       │ - Background      │ - Presence verify   │
 │ - Event capture   │ - Statistics      │   monitoring      │ - Challenges        │
-│ - WAL integration │ - Evidence export │ - Auto checkpoint │ - Responses         │
+│                   │ - Fingerprinting  │                   │ - Responses         │
 ├───────────────────┼───────────────────┼───────────────────┼─────────────────────┤
-│ internal/tpm      │ internal/          │ internal/         │                     │
-│ - TPM attestation │   declaration     │   forensics       │                     │
-│ - Secure enclave  │ - Signed decl     │ - Correlator      │                     │
-│ - Hardware bind   │ - Process record  │ - Analysis        │                     │
+│ src/tpm/          │ src/anchors/      │ src/api.rs        │                     │
+│ - Attestation     │ - RFC3161         │ - FFI/Bridge      │                     │
+│ - Secure enclave  │ - Bitcoin         │ - High-level API  │                     │
+│ - Hardware bind   │                   │                   │                     │
 └───────────────────┴───────────────────┴───────────────────┴─────────────────────┘
-                                           │
-                                           ▼
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                              PACKAGE LIBRARIES                                   │
-├─────────────────────────────────┬───────────────────────────────────────────────┤
-│ pkg/anchors                     │ pkg/verify                                    │
-│ - AnchorRegistry                │ - Verification engine                         │
-│ - Bitcoin anchor                │ - Evidence validation                         │
-│ - Keybase proofs                │ - Report generation                           │
-│ - Drand beacon                  │                                               │
-└─────────────────────────────────┴───────────────────────────────────────────────┘
                                            │
                                            ▼
 ┌─────────────────────────────────────────────────────────────────────────────────┐
@@ -88,181 +76,125 @@ Witnessd is a cryptographic authorship witnessing system composed of:
 │ ├── config.json                 │ ├── config.json                               │
 │ ├── chains/                     │ ├── chains/                                   │
 │ ├── sessions/                   │ ├── sessions/                                 │
-│ └── tracking/*.wal              │ └── tracking/*.wal                            │
+│ └── evidence/                   │ └── evidence/                                 │
 └─────────────────────────────────┴───────────────────────────────────────────────┘
 ```
 
 ## Core Components
 
-### Command Layer (`cmd/witnessd`)
+### CLI Application (`rust/witnessd-cli`)
 
 The main entry point handling:
-- Command-line argument parsing
-- Interactive menu mode
+- Command-line argument parsing (`clap`)
 - Subcommand dispatch
-- Error handling and user feedback
+- User interaction and output
 
 Key files:
-- `main.go`: Entry point and command dispatch
-- `menu.go`: Interactive menu system
+- `main.rs`: Entry point and command dispatch
+- `smart_defaults.rs`: Logic for inferring user intent
 
-### Configuration (`internal/config`)
+### Core Library (`rust/witnessd-core`)
 
-Manages application configuration:
-- TOML and JSON config file parsing
-- Default value handling
-- Environment variable overrides
-- Directory path resolution
+Contains the business logic and cryptographic implementation.
 
-### Evidence System (`internal/evidence`)
+### Evidence System (`src/evidence.rs`)
 
 Creates and manages evidence packets:
 
-```go
-type EvidencePacket struct {
-    Version      string
-    Created      time.Time
-    Document     DocumentInfo
-    Checkpoints  []Checkpoint
-    KeyHierarchy KeyHierarchyInfo
-    Declaration  SignedDeclaration
-    Anchors      []AnchorProof
+```rust
+pub struct Packet {
+    pub version: u32,
+    pub created_at: DateTime<Utc>,
+    pub document: DocumentInfo,
+    pub checkpoints: Vec<Checkpoint>,
+    pub declaration: Option<Declaration>,
+    // ...
 }
 ```
 
-### VDF Engine (`internal/vdf`)
+### VDF Engine (`src/vdf/`)
 
-Implements Verifiable Delay Functions:
+Implements Verifiable Delay Functions (Pietrzak/Wesolowski):
 
-```go
-type Proof struct {
-    Input      [32]byte
-    Output     [32]byte
-    Iterations uint64
-    Duration   time.Duration
+```rust
+pub struct Proof {
+    pub input: [u8; 32],
+    pub output: [u8; 32],
+    pub iterations: u64,
 }
 
-func Compute(input [32]byte, duration time.Duration, params *Params) (*Proof, error)
-func Verify(proof *Proof) bool
+pub fn compute(input: [u8; 32], duration: Duration, params: Parameters) -> Result<Proof>;
+pub fn verify(proof: &Proof, params: Parameters) -> Result<bool>;
 ```
 
-Uses sequential squaring in RSA group for non-parallelizable delay.
-
-### MMR (Merkle Mountain Range) (`internal/mmr`)
+### MMR (Merkle Mountain Range) (`src/mmr/`)
 
 Append-only authenticated data structure:
 
-```go
-type MMR struct {
-    store Store
-    size  uint64
-    peaks []uint64
+```rust
+pub struct MMR {
+    store: Box<dyn Store>,
+    // ...
 }
 
-func (m *MMR) Append(data []byte) (uint64, error)
-func (m *MMR) GetRoot() ([32]byte, error)
-func (m *MMR) GenerateProof(leafIndex uint64) (*InclusionProof, error)
+impl MMR {
+    pub fn append(&mut self, data: &[u8]) -> Result<u64>;
+    pub fn get_root(&self) -> Result<[u8; 32]>;
+    pub fn generate_proof(&self, leaf_index: u64) -> Result<InclusionProof>;
+}
 ```
 
-Properties:
-- O(log n) append
-- O(log n) proof generation
-- O(log n) verification
-- Supports efficient range proofs
-
-### Key Hierarchy (`internal/keyhierarchy`)
+### Key Hierarchy (`src/keyhierarchy/`)
 
 Three-tier key management:
 
-```go
+```rust
 // Tier 0: Master Identity
-type MasterIdentity struct {
-    PublicKey   ed25519.PublicKey
-    Fingerprint string
-    DeviceID    string
+pub struct MasterIdentity {
+    pub public_key: [u8; 32], // Ed25519
+    pub fingerprint: String,
+    pub device_id: String,
 }
 
 // Tier 1: Session
-type SessionCertificate struct {
-    SessionID     [32]byte
-    SessionPubKey ed25519.PublicKey
-    MasterPubKey  ed25519.PublicKey
-    Signature     [64]byte
-}
-
-// Tier 2: Ratchet
-type RatchetState struct {
-    current   [32]byte
-    ordinal   uint64
-    sessionID [32]byte
+pub struct SessionCertificate {
+    pub session_id: [u8; 32],
+    pub session_pubkey: [u8; 32],
+    pub master_pubkey: [u8; 32],
+    pub signature: [u8; 64],
 }
 ```
 
-### Storage (`internal/store`)
+### Storage (`src/store.rs`)
 
 Secure SQLite storage with integrity protection:
 
-```go
-type SecureStore struct {
-    db      *sql.DB
-    hmacKey []byte
+```rust
+pub struct SecureStore {
+    conn: Connection,
+    hmac_key: [u8; 32],
 }
 
-type SecureEvent struct {
-    DeviceID      [16]byte
-    TimestampNs   int64
-    FilePath      string
-    ContentHash   [32]byte
-    FileSize      int64
-    VDFInput      [32]byte
-    VDFOutput     [32]byte
-    VDFIterations uint64
-    HMAC          []byte
+pub struct SecureEvent {
+    pub device_id: [u8; 16],
+    pub timestamp_ns: i64,
+    pub content_hash: [u8; 32],
+    // ...
 }
 ```
 
-### WAL (Write-Ahead Log) (`internal/wal`)
+### Forensic Analysis (`src/analysis/`)
 
-Crash-safe event logging:
+Modules for analyzing behavioral patterns:
+- `behavioral_fingerprint.rs`: Statistical analysis of typing cadence.
 
-```go
-type WAL struct {
-    file     *os.File
-    position uint64
-}
+### Hardware Security (`src/tpm/`)
 
-func (w *WAL) Append(entry Entry) error
-func (w *WAL) Recover() ([]Entry, error)
-```
-
-### Tracking (`internal/tracking`)
-
-Keystroke event capture (count only, not content):
-
-```go
-type Tracker struct {
-    documentPath string
-    keystrokeCount uint64
-    jitterSamples  []JitterSample
-    wal            *wal.WAL
-}
-```
-
-### Sentinel (`internal/sentinel`)
-
-Background monitoring daemon:
-
-```go
-type Sentinel struct {
-    config    *Config
-    documents map[string]*TrackedDocument
-    ticker    *time.Ticker
-}
-
-func (s *Sentinel) Start() error
-func (s *Sentinel) TrackDocument(path string)
-func (s *Sentinel) AutoCheckpoint()
-```
+Abstracts over:
+- `secure_enclave.rs`: macOS Secure Enclave
+- `linux.rs`: Linux TPM 2.0
+- `windows.rs`: Windows TPM 2.0
+- `software.rs`: Fallback for development
 
 ## Data Flow
 
@@ -279,38 +211,6 @@ func (s *Sentinel) AutoCheckpoint()
        │           │ Content hash │    │ VDF proof   │    │ SQLite +     │
        │           │ VDF input    │    │ Ratchet sig │    │ HMAC         │
        │           └──────────────┘    └─────────────┘    └──────────────┘
-       │
-       ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│                        If Tracking Active                            │
-│  ┌───────────────┐    ┌───────────────┐    ┌───────────────┐       │
-│  │ Keystroke     │    │ Jitter        │    │ Include in    │       │
-│  │ count         │───▶│ statistics    │───▶│ checkpoint    │       │
-│  └───────────────┘    └───────────────┘    └───────────────┘       │
-└─────────────────────────────────────────────────────────────────────┘
-```
-
-### Evidence Export
-
-```
-┌──────────────────────────────────────────────────────────────────────┐
-│                       Evidence Packet Creation                        │
-├──────────────────────────────────────────────────────────────────────┤
-│                                                                       │
-│  ┌─────────────┐         ┌─────────────┐         ┌─────────────┐    │
-│  │ Load        │         │ Include     │         │ Add         │    │
-│  │ Checkpoints │────────▶│ VDF Proofs  │────────▶│ Key         │    │
-│  │ from DB     │         │             │         │ Hierarchy   │    │
-│  └─────────────┘         └─────────────┘         └─────────────┘    │
-│         │                       │                       │            │
-│         ▼                       ▼                       ▼            │
-│  ┌─────────────┐         ┌─────────────┐         ┌─────────────┐    │
-│  │ Generate    │         │ Create      │         │ Serialize   │    │
-│  │ Declaration │────────▶│ Anchors     │────────▶│ to JSON/    │    │
-│  │             │         │ (optional)  │         │ CBOR        │    │
-│  └─────────────┘         └─────────────┘         └─────────────┘    │
-│                                                                       │
-└──────────────────────────────────────────────────────────────────────┘
 ```
 
 ### Verification Flow
@@ -326,153 +226,42 @@ func (s *Sentinel) AutoCheckpoint()
                    │ Hash links   │    │ Timing      │    │ Session cert │
                    │ Signatures   │    │ proofs      │    │ Ratchet sigs │
                    └──────────────┘    └─────────────┘    └──────────────┘
-                                              │
-                                              ▼
-                   ┌──────────────────────────────────────────────────────┐
-                   │                  Verification Report                  │
-                   │  - Pass/Fail status for each check                   │
-                   │  - Evidence tier classification                       │
-                   │  - Timing analysis                                    │
-                   └──────────────────────────────────────────────────────┘
 ```
 
 ## Key Hierarchy
 
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                         TIER 0: IDENTITY ROOT                               │
-│                                                                             │
-│  PUF Response ──▶ HKDF-SHA256 ──▶ master_key ──▶ Ed25519 Public Key        │
-│                                                                             │
-│  Properties:                                                                │
-│  - Device-bound via PUF                                                     │
-│  - Never used directly for checkpoints                                      │
-│  - Signs session certificates only                                          │
-└─────────────────────────────────────────────────────────────────────────────┘
-                                    │
-                                    │ HKDF derivation
-                                    ▼
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                         TIER 1: SESSION KEY                                 │
-│                                                                             │
-│  master_key + session_id + timestamp ──▶ HKDF ──▶ session_key              │
-│                                                                             │
-│  Session Certificate:                                                       │
-│  { session_id, session_pubkey, document_hash, master_pubkey, signature }   │
-│                                                                             │
-│  Properties:                                                                │
-│  - Generated per writing session                                            │
-│  - Certified by master key                                                  │
-│  - Initializes the ratchet                                                  │
-└─────────────────────────────────────────────────────────────────────────────┘
-                                    │
-                                    │ Ratchet derivation
-                                    ▼
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                    TIER 2: RATCHETING CHECKPOINT KEY                        │
-│                                                                             │
-│  For each checkpoint n:                                                     │
-│    ratchet_n ──▶ HKDF ──▶ signing_key_n                                    │
-│    Sign(signing_key_n, checkpoint_hash_n)                                   │
-│    ratchet_n + checkpoint_hash_n ──▶ HKDF ──▶ ratchet_{n+1}               │
-│    SecureWipe(ratchet_n)                                                    │
-│                                                                             │
-│  Properties:                                                                │
-│  - Each checkpoint has unique key                                           │
-│  - Forward secrecy (can't derive past keys)                                 │
-│  - Backward secrecy (can't derive future keys)                              │
-└─────────────────────────────────────────────────────────────────────────────┘
-```
+Same as legacy, but implemented in Rust:
+
+1. **Tier 0 (Identity):** Derived from PUF/Mnemonic.
+2. **Tier 1 (Session):** Ephemeral per-session keys.
+3. **Tier 2 (Ratchet):** Rolling keys for each checkpoint to ensure forward secrecy.
 
 ## Storage Architecture
 
 ### SQLite Schema
 
+Schema is maintained in `src/store.rs` via `rusqlite`.
+
 ```sql
--- Secure events with HMAC protection
-CREATE TABLE secure_events (
+CREATE TABLE IF NOT EXISTS secure_events (
     id INTEGER PRIMARY KEY,
     device_id BLOB NOT NULL,
     timestamp_ns INTEGER NOT NULL,
     file_path TEXT NOT NULL,
     content_hash BLOB NOT NULL,
-    file_size INTEGER NOT NULL,
-    size_delta INTEGER,
-    context_type TEXT,
-    vdf_input BLOB,
-    vdf_output BLOB,
-    vdf_iterations INTEGER,
-    event_hash BLOB NOT NULL,
-    hmac BLOB NOT NULL,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    -- ...
+    hmac BLOB NOT NULL
 );
-
-CREATE INDEX idx_events_file ON secure_events(file_path);
-CREATE INDEX idx_events_timestamp ON secure_events(timestamp_ns);
-```
-
-### WAL Format
-
-Binary format for crash recovery:
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│ WAL Header (64 bytes)                                           │
-├─────────────────────────────────────────────────────────────────┤
-│ Magic: "WWAL" (4 bytes)                                         │
-│ Version: uint32 (4 bytes)                                       │
-│ Flags: uint32 (4 bytes)                                         │
-│ SessionID: [32]byte                                             │
-│ Created: int64 (8 bytes)                                        │
-│ Reserved: 12 bytes                                              │
-└─────────────────────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────────────────────┐
-│ Entry (variable length)                                         │
-├─────────────────────────────────────────────────────────────────┤
-│ Length: uint32 (4 bytes)                                        │
-│ Type: uint8 (1 byte)                                            │
-│ Timestamp: int64 (8 bytes)                                      │
-│ Payload: [Length - 13]byte                                      │
-│ CRC32: uint32 (4 bytes)                                         │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-## Platform-Specific Components
-
-### macOS App Architecture
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                        SwiftUI Layer                             │
-├─────────────────────────────────────────────────────────────────┤
-│ StatusBarController     │ SettingsView    │ OnboardingView      │
-│ PopoverViews            │ HistoryView     │ NotificationManager │
-└─────────────────────────────────────────────────────────────────┘
-                                │
-                                ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                     Bridge Layer                                 │
-├─────────────────────────────────────────────────────────────────┤
-│ WitnessdBridge.swift                                            │
-│ - Spawns witnessd CLI subprocess                                │
-│ - JSON-based IPC                                                │
-│ - Async/await interface                                         │
-│ - Status polling                                                │
-└─────────────────────────────────────────────────────────────────┘
-                                │
-                                ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                     CLI Subprocess                               │
-├─────────────────────────────────────────────────────────────────┤
-│ Bundled witnessd binary                                         │
-│ - Runs in Application Support container                         │
-│ - WITNESSD_DATA_DIR environment variable                        │
-│ - JSON output mode for machine parsing                          │
-└─────────────────────────────────────────────────────────────────┘
 ```
 
 ## Design Decisions
+
+### Why Rust?
+
+- **Memory Safety:** Critical for cryptographic software.
+- **Performance:** VDF computation requires raw CPU speed.
+- **Cross-Platform:** Excellent support for macOS, Linux, and Windows.
+- **FFI:** Easy integration with Swift (macOS) and other languages.
 
 ### Why VDF Instead of Trusted Timestamps?
 
@@ -482,8 +271,6 @@ VDFs provide:
 - Cannot be backdated even by the author
 - Cryptographically verifiable
 
-Trade-off: Requires CPU time for each checkpoint.
-
 ### Why SQLite Instead of Flat Files?
 
 SQLite provides:
@@ -492,26 +279,8 @@ SQLite provides:
 - Single file backup
 - Built-in corruption detection
 
-With HMAC layer for tamper evidence.
-
-### Why Three-Tier Key Hierarchy?
-
-Balances security properties:
-- Tier 0: Long-term identity (rarely used)
-- Tier 1: Session isolation (limits blast radius)
-- Tier 2: Forward secrecy (protects past)
-
-### Why MMR Instead of Standard Merkle Tree?
-
-MMR advantages:
-- Append-only (no rebalancing)
-- Efficient range proofs
-- Constant-time append
-- Naturally fits document evolution
-
 ---
 
 See also:
-- [Building](building.md) - Build instructions
-- [Protocol Specifications](../protocol/evidence-format.md) - Data formats
-- [Key Management](../security/key-management.md) - Key details
+- [Building](../../README.md#development--building) - Build instructions
+- [Protocol Specifications](../spec/evidence-packet-v1.schema.json) - Data formats

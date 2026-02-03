@@ -45,11 +45,11 @@ Each file change event results in the following data being recorded:
 
 | Component | Algorithm | Reference | Implementation |
 |-----------|-----------|-----------|----------------|
-| Content hash | SHA-256 | FIPS 180-4 | Go crypto/sha256 |
-| Internal node hash | SHA-256 | FIPS 180-4 | Go crypto/sha256, 0x01 prefix |
-| Leaf node hash | SHA-256 | FIPS 180-4 | Go crypto/sha256, 0x00 prefix |
-| Signature | Ed25519 | RFC 8032 | golang.org/x/crypto/ed25519 |
-| Encryption (optional) | AES-256-GCM | FIPS 197, SP 800-38D | Go crypto/aes, crypto/cipher |
+| Content hash | SHA-256 | FIPS 180-4 | Rust `sha2` crate |
+| Internal node hash | SHA-256 | FIPS 180-4 | Rust `sha2` crate, 0x01 prefix |
+| Leaf node hash | SHA-256 | FIPS 180-4 | Rust `sha2` crate, 0x00 prefix |
+| Signature | Ed25519 | RFC 8032 | Rust `ed25519-dalek` crate |
+| Encryption (optional) | AES-256-GCM | FIPS 197, SP 800-38D | Rust `aes-gcm` crate |
 
 ### 1.4 Storage Format
 
