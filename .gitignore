@@ -114,3 +114,6 @@ paper/
 
 
 rust/witnessd-core/vendor/
+
+# Scratchpad
+.scratchpad/
