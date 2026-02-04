@@ -26,6 +26,28 @@ use windows::Win32::UI::WindowsAndMessaging::{
 use crate::jitter::SimpleJitterSession;
 
 // =============================================================================
+// Thread-safe HHOOK wrapper
+// =============================================================================
+
+/// A wrapper around HHOOK that implements Send + Sync.
+///
+/// # Safety
+///
+/// This is safe because:
+/// - HHOOK handles are thread-safe for the operations we perform (unhook)
+/// - The hook callback runs in the context of the thread that processes messages
+/// - We properly synchronize access through the struct's atomics and only
+///   unhook from the same thread context (via Drop)
+#[derive(Debug)]
+struct HookHandle(HHOOK);
+
+// SAFETY: HHOOK is a handle that can be safely sent between threads.
+// The actual hook callback runs in the message pump thread, and
+// UnhookWindowsHookEx can be called from any thread.
+unsafe impl Send for HookHandle {}
+unsafe impl Sync for HookHandle {}
+
+// =============================================================================
 // Permission handling
 // =============================================================================
 
@@ -199,7 +221,7 @@ unsafe extern "system" fn low_level_keyboard_proc(
 pub struct WindowsKeystrokeCapture {
     running: Arc<AtomicBool>,
     sender: Option<mpsc::Sender<KeystrokeEvent>>,
-    hook: Option<HHOOK>,
+    hook: Option<HookHandle>,
     strict_mode: bool,
     stats: Arc<RwLock<SyntheticStats>>,
 }
@@ -243,7 +265,7 @@ impl KeystrokeCapture for WindowsKeystrokeCapture {
         // Install the hook
         unsafe {
             let hook = SetWindowsHookExW(WH_KEYBOARD_LL, Some(keystroke_capture_hook), None, 0)?;
-            self.hook = Some(hook);
+            self.hook = Some(HookHandle(hook));
         }
 
         // Start message pump in a separate thread
@@ -267,9 +289,9 @@ impl KeystrokeCapture for WindowsKeystrokeCapture {
     fn stop(&mut self) -> Result<()> {
         self.running.store(false, Ordering::SeqCst);
 
-        if let Some(hook) = self.hook.take() {
+        if let Some(hook_handle) = self.hook.take() {
             unsafe {
-                let _ = UnhookWindowsHookEx(hook);
+                let _ = UnhookWindowsHookEx(hook_handle.0);
             }
         }
 
@@ -448,7 +470,7 @@ static mut MOUSE_IDLE_ONLY_MODE: bool = true;
 pub struct WindowsMouseCapture {
     running: Arc<AtomicBool>,
     sender: Option<mpsc::Sender<MouseEvent>>,
-    hook: Option<HHOOK>,
+    hook: Option<HookHandle>,
     idle_stats: Arc<RwLock<MouseIdleStats>>,
     stego_params: MouseStegoParams,
     idle_only_mode: bool,
@@ -504,7 +526,7 @@ impl MouseCapture for WindowsMouseCapture {
         // Install the hook
         unsafe {
             let hook = SetWindowsHookExW(WH_MOUSE_LL, Some(mouse_capture_hook), None, 0)?;
-            self.hook = Some(hook);
+            self.hook = Some(HookHandle(hook));
         }
 
         // Start message pump in a separate thread
@@ -528,9 +550,9 @@ impl MouseCapture for WindowsMouseCapture {
     fn stop(&mut self) -> Result<()> {
         self.running.store(false, Ordering::SeqCst);
 
-        if let Some(hook) = self.hook.take() {
+        if let Some(hook_handle) = self.hook.take() {
             unsafe {
-                let _ = UnhookWindowsHookEx(hook);
+                let _ = UnhookWindowsHookEx(hook_handle.0);
             }
         }
 
