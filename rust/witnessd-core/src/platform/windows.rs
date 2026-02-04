@@ -5,7 +5,10 @@
 
 #![allow(dead_code)]
 
-use super::types::{FocusInfo, KeystrokeEvent, MouseEvent, MouseIdleStats, MouseStegoParams, PermissionStatus, SyntheticStats};
+use super::types::{
+    FocusInfo, KeystrokeEvent, MouseEvent, MouseIdleStats, MouseStegoParams, PermissionStatus,
+    SyntheticStats,
+};
 use super::{FocusMonitor, KeystrokeCapture, MouseCapture};
 use anyhow::{anyhow, Result};
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -72,7 +75,9 @@ pub fn get_active_focus() -> Result<FocusInfo> {
         let mut title_buffer = [0u16; 512];
         let title_len = GetWindowTextW(hwnd, &mut title_buffer);
         let window_title = if title_len > 0 {
-            Some(String::from_utf16_lossy(&title_buffer[..title_len as usize]))
+            Some(String::from_utf16_lossy(
+                &title_buffer[..title_len as usize],
+            ))
         } else {
             None
         };
@@ -237,12 +242,7 @@ impl KeystrokeCapture for WindowsKeystrokeCapture {
 
         // Install the hook
         unsafe {
-            let hook = SetWindowsHookExW(
-                WH_KEYBOARD_LL,
-                Some(keystroke_capture_hook),
-                None,
-                0,
-            )?;
+            let hook = SetWindowsHookExW(WH_KEYBOARD_LL, Some(keystroke_capture_hook), None, 0)?;
             self.hook = Some(hook);
         }
 
@@ -503,12 +503,7 @@ impl MouseCapture for WindowsMouseCapture {
 
         // Install the hook
         unsafe {
-            let hook = SetWindowsHookExW(
-                WH_MOUSE_LL,
-                Some(mouse_capture_hook),
-                None,
-                0,
-            )?;
+            let hook = SetWindowsHookExW(WH_MOUSE_LL, Some(mouse_capture_hook), None, 0)?;
             self.hook = Some(hook);
         }
 
@@ -587,11 +582,7 @@ impl Drop for WindowsMouseCapture {
 }
 
 /// Hook callback for mouse capture.
-unsafe extern "system" fn mouse_capture_hook(
-    code: i32,
-    wparam: WPARAM,
-    lparam: LPARAM,
-) -> LRESULT {
+unsafe extern "system" fn mouse_capture_hook(code: i32, wparam: WPARAM, lparam: LPARAM) -> LRESULT {
     if code >= 0 && wparam.0 as u32 == WM_MOUSEMOVE {
         // Only capture if keyboard is active (idle mode) or idle_only_mode is disabled
         if MOUSE_IDLE_ONLY_MODE && !MOUSE_KEYBOARD_ACTIVE {
