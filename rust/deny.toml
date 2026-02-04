@@ -15,6 +15,10 @@ ignore = [
     "RUSTSEC-2025-0134",
     # bincode unmaintained - works fine, will migrate eventually
     "RUSTSEC-2025-0141",
+    # paste unmaintained - transitive dep from flutter_rust_bridge, no alternative
+    "RUSTSEC-2024-0436",
+    # derivative unmaintained - transitive dep from zbus, no fix available yet
+    "RUSTSEC-2024-0388",
 ]
 
 [licenses]
@@ -54,3 +58,36 @@ license-files = []
 multiple-versions = "warn"
 wildcards = "deny"
 highlight = "all"
+
+# Skip duplicate warnings for transitive dependencies we can't control
+# These come from keyring -> zbus -> async ecosystem version conflicts
+skip = [
+    { crate = "async-io" },
+    { crate = "async-lock" },
+    { crate = "base64" },
+    { crate = "bitflags" },
+    { crate = "core-foundation" },
+    { crate = "dashmap" },
+    { crate = "event-listener" },
+    { crate = "fastrand" },
+    { crate = "foreign-types" },
+    { crate = "foreign-types-shared" },
+    { crate = "futures-lite" },
+    { crate = "getrandom" },
+    { crate = "hashbrown" },
+    { crate = "nix" },
+    { crate = "polling" },
+    { crate = "rand" },
+    { crate = "rand_core" },
+    { crate = "rand_chacha" },
+    { crate = "rustix" },
+    { crate = "security-framework" },
+    { crate = "security-framework-sys" },
+    { crate = "syn" },
+    { crate = "windows" },
+    { crate = "windows-core" },
+    { crate = "windows-result" },
+    { crate = "windows-strings" },
+    { crate = "windows-sys" },
+    { crate = "windows-targets" },
+]
