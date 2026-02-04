@@ -535,7 +535,7 @@ impl LinuxKeystrokeCapture {
         devices: Arc<RwLock<HashMap<PathBuf, LinuxInputDevice>>>,
         strict: bool,
     ) {
-        let device = match Device::open(&path) {
+        let mut device = match Device::open(&path) {
             Ok(d) => d,
             Err(e) => {
                 eprintln!("Failed to open device {:?}: {}", path, e);
@@ -917,7 +917,7 @@ impl LinuxMouseCapture {
         last_position: Arc<RwLock<(f64, f64)>>,
         idle_only_mode: Arc<AtomicBool>,
     ) {
-        let device = match Device::open(&path) {
+        let mut device = match Device::open(&path) {
             Ok(d) => d,
             Err(e) => {
                 eprintln!("Failed to open mouse device {:?}: {}", path, e);

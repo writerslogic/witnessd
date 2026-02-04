@@ -1266,9 +1266,10 @@ impl Sentinel {
 
         #[cfg(target_os = "macos")]
         let mouse_capture_result = crate::platform::macos::MacOSMouseCapture::new();
-        #[cfg(not(target_os = "macos"))]
-        let mouse_capture_result: anyhow::Result<crate::platform::macos::MacOSMouseCapture> =
-            Err(anyhow::anyhow!("Mouse capture not yet implemented for this platform"));
+        #[cfg(target_os = "linux")]
+        let mouse_capture_result = crate::platform::linux::LinuxMouseCapture::new();
+        #[cfg(target_os = "windows")]
+        let mouse_capture_result = crate::platform::windows::WindowsMouseCapture::new();
 
         if let Ok(mut mouse_capture) = mouse_capture_result {
             if let Ok(sync_rx) = mouse_capture.start() {
