@@ -276,4 +276,6 @@ pub use macos::{
 };
 
 #[cfg(target_os = "windows")]
-pub use windows::{get_active_focus as windows_get_active_focus, FocusInfo as WindowsFocusInfo};
+pub use types::FocusInfo as WindowsFocusInfo;
+#[cfg(target_os = "windows")]
+pub use windows::get_active_focus as windows_get_active_focus;
