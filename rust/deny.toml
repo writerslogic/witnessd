@@ -36,27 +36,13 @@ allow = [
 confidence-threshold = 0.8
 
 # Our own crates use PolyForm Noncommercial license (custom, non-SPDX)
-[[licenses.clarify]]
-name = "witnessd-core"
-expression = "LicenseRef-PolyForm-Noncommercial-1.0.0"
-license-files = [
-    { path = "../../LICENSE", hash = 0x00000000 }
-]
-
-[[licenses.clarify]]
-name = "witnessd-cli"
-expression = "LicenseRef-PolyForm-Noncommercial-1.0.0"
-license-files = [
-    { path = "../../LICENSE", hash = 0x00000000 }
-]
-
 [[licenses.exceptions]]
 name = "witnessd-core"
-allow = ["LicenseRef-PolyForm-Noncommercial-1.0.0"]
+allow = ["PolyForm-Noncommercial-1.0.0"]
 
 [[licenses.exceptions]]
 name = "witnessd-cli"
-allow = ["LicenseRef-PolyForm-Noncommercial-1.0.0"]
+allow = ["PolyForm-Noncommercial-1.0.0"]
 
 # allo-isolate doesn't specify a license in Cargo.toml but is MIT licensed
 [[licenses.clarify]]
