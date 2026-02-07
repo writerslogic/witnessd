@@ -1060,7 +1060,9 @@ impl Default for AsyncIpcClient {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[allow(unused_imports)]
     use std::sync::Arc;
+    #[allow(unused_imports)]
     use tempfile::tempdir;
 
     struct TestHandler;
