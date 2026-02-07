@@ -10,7 +10,7 @@ physjitter = ["witnessd-core/physjitter"]
 
 [dependencies]
 witnessd-core = { path = "../witnessd-core" }
-clap = { version = "4.4", features = ["derive"] }
+clap = { version = "4.5", features = ["derive"] }
 anyhow = "1.0"
 tokio = { version = "1.36", features = ["full"] }
 serde_json = "1.0"
