@@ -117,3 +117,9 @@ rust/witnessd-core/vendor/
 
 # Scratchpad
 .scratchpad/
+
+# RFC drafts (private until published)
+rfc/
+
+# PKI keys and certificates (private)
+pki/
