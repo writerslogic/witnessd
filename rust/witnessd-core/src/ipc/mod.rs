@@ -1265,8 +1265,7 @@ mod tests {
                 // If it somehow decoded, it shouldn't match original
                 let re_encoded = encode_message(&decoded).unwrap();
                 assert_ne!(
-                    re_encoded,
-                    full_bytes,
+                    re_encoded, full_bytes,
                     "Truncated message should not decode to original"
                 );
             }
