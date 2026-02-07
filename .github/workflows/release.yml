@@ -10,6 +10,11 @@ on:
         description: 'Tag to release (e.g., v0.1.7)'
         required: true
 
+# Each release must complete - do not cancel
+concurrency:
+  group: release-${{ github.ref_name }}
+  cancel-in-progress: false
+
 permissions:
   contents: write
   id-token: write
