@@ -1510,7 +1510,8 @@ mod tests {
         assert!(
             err.contains("not found")
                 || err.contains("No such file")
-                || err.contains("does not exist"),
+                || err.contains("does not exist")
+                || err.contains("cannot find"), // Windows error message
             "Expected file not found error, got: {}",
             err
         );
