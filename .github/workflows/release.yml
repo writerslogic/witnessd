@@ -162,7 +162,7 @@ jobs:
           retention-days: 7
 
       - name: Attest Build Provenance
-        uses: actions/attest-build-provenance@v2
+        uses: actions/attest-build-provenance@v3
         with:
           subject-path: ${{ env.ARCHIVE }}
 
