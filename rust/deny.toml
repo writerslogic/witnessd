@@ -39,14 +39,7 @@ allow = [
 ]
 confidence-threshold = 0.8
 
-# Our own crates use PolyForm Noncommercial license (custom, non-SPDX)
-[[licenses.exceptions]]
-name = "witnessd-core"
-allow = ["PolyForm-Noncommercial-1.0.0"]
-
-[[licenses.exceptions]]
-name = "witnessd-cli"
-allow = ["PolyForm-Noncommercial-1.0.0"]
+# Our own crates use Apache-2.0 (already in the allow list above)
 
 # allo-isolate doesn't specify a license in Cargo.toml but is MIT licensed
 [[licenses.clarify]]
