@@ -45,7 +45,7 @@ jobs:
           echo "SHA256: $SHA256"
 
       - name: Checkout homebrew-tap
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: writerslogic/homebrew-tap
           token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
@@ -154,7 +154,7 @@ jobs:
           echo "SHA256: $SHA256"
 
       - name: Checkout scoop-bucket
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: writerslogic/scoop-bucket
           token: ${{ secrets.SCOOP_BUCKET_TOKEN }}
